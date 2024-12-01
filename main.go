@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"go-sns/config"
+	"go-sns/utils"
+	"log"
+)
 
 func main(){
-	fmt.Println("Hello world")
+	utils.LoggingSettings(config.Config.LogFile)
+	log.Println("test")
 }
