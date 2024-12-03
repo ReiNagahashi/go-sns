@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"go-sns/config"
+	"go-sns/database"
 	"go-sns/utils"
-	"log"
 )
 
 func main(){
 	utils.LoggingSettings(config.Config.LogFile)
-	log.Println("test")
+	// log.Println("test")
+	fmt.Println(database.DbConnection)
 }
