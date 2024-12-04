@@ -7,7 +7,7 @@ type Post struct{
 	timeStamp DateTimeStamp
 }
 
-func NewPost(id int, title, description string, timeStamp DateTimeStamp) *Post{
+func NewPost(id  int, title, description string, timeStamp DateTimeStamp) *Post{
 	return &Post{id, title, description, timeStamp}
 }
 
@@ -41,6 +41,10 @@ func (p Post) GetTimeStamp() DateTimeStamp{
 
 func (p *Post) SetTimeStamp(timeStamp DateTimeStamp){
 	p.timeStamp = timeStamp
+}
+
+func (p *Post) GetFields() []interface{}{
+	return []interface{}{p.title, p.description, p.timeStamp.GetCreatedAt(), p.timeStamp.GetUpdatedAt()}
 }
 
 
