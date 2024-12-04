@@ -1,0 +1,11 @@
+# database files
+*.db
+# environmental  variables
+.ini
+config.ini
+# IDE/Editor settings
+.vscode/
+# related to OS
+.DS_Store
+# log files
+*.log
