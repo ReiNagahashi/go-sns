@@ -10,6 +10,7 @@ type ConfigList struct{
 	LogFile string
 	SQLDriver string
 	DbPath string
+	Port int
 }
 
 var Config ConfigList
@@ -25,5 +26,6 @@ func init(){
 		LogFile: cfg.Section("go-sns").Key("log_file").String(),
 		SQLDriver: cfg.Section("db").Key("driver").String(),
 		DbPath: cfg.Section("db").Key("path").String(),
+		Port: cfg.Section("web").Key("port").MustInt(),
 	}
 }
