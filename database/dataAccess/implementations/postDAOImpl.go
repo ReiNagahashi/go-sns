@@ -14,13 +14,25 @@ type PostDAOImpl struct{
 }
 
 
-func (p PostDAOImpl) GetAll(offset, limit int) []models.Post{
+func (p PostDAOImpl) GetAll(limitData ...int) []models.Post{
 	db := database.NewSqliteBase()
-
 	defer db.DbConnection.Close()
-	query := "SELECT * FROM posts LIMIT ?, ?"
 
-	posts, err := db.PrepareAndFetchAll(query, []interface{}{offset, limit}...)
+	var limit int
+
+	if len(limitData) > 1 && limitData[0] > 0{
+		limit = limitData[0]
+	}else{
+		var err error
+		limit, err = db.GetTableLength("posts")
+		if err != nil{
+			log.Fatalln("action=PostDAOImpl.GetAll msg=Error executing query: ", err)
+		}
+	}
+
+	query := "SELECT * FROM posts LIMIT ?"
+
+	posts, err := db.PrepareAndFetchAll(query, []interface{}{limit}...)
 	if err != nil {
 		log.Fatalln("action=PostDAOImpl.GetAll msg=Error executing query: ", err)
 	}
@@ -69,3 +81,5 @@ func (p PostDAOImpl) resultsToPosts(results []map[string]interface{}) []models.P
 // func (p PostDAOImpl) Delete(postData models.Post) bool{
 
 // }
+
+

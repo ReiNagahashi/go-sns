@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-sns/config"
+	"go-sns/database/dataAccess/implementations"
 	"log"
 	"net/http"
 	"regexp"
@@ -14,7 +15,6 @@ type JSONError struct {
 	Code int `json:"code"`
 }
 
-// api通信をしたときのエラーを表示するためにJSON形式のエラーを作成する
 func APIError(w http.ResponseWriter, errMessage string, code int){
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -26,7 +26,7 @@ func APIError(w http.ResponseWriter, errMessage string, code int){
 }
 
 
-var apiValidaPath = regexp.MustCompile("^/api/candle/$")
+var apiValidaPath = regexp.MustCompile("^/api/posts/$")
 
 // URLのバリデーション
 func apiMakeHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc{
@@ -39,11 +39,20 @@ func apiMakeHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFun
 	}
 }
 
+
 func viewPostsHandler(w http.ResponseWriter, r *http.Request){
-	// ポストインスタンスを全て持ってくる
-	// エンコード
-	// ヘッダーの設定
-	// ヘッダーにレスポンスデータの追加
+	dao := implementations.PostDAOImpl{}
+	posts := dao.GetAll()
+
+	fmt.Println(posts)
+
+	js, err := json.Marshal(posts)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }
 
 

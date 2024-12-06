@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"go-sns/config"
 	"log"
 
@@ -32,7 +33,7 @@ func (s *SqliteBase) PrepareAndFetchAll(query string, args ...interface{}) ([]ma
 	defer stmt.Close()
 
 	rows, execErr := stmt.Query(args...)
-	if err != nil{
+	if execErr != nil{
 		return nil, execErr
 	}
 	defer rows.Close()
@@ -82,3 +83,15 @@ func (s *SqliteBase) PrepareAndExecute(query string, args ...interface{}) error 
 	return nil
 }
 
+
+func (s *SqliteBase) GetTableLength(tableName string)(int, error){
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)
+	var count int
+
+	err := s.DbConnection.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
