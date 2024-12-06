@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"go-sns/config"
 	"log"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -23,7 +24,50 @@ func NewSqliteBase() *SqliteBase{
 	return SqliteBase
 }
 
-func (s *SqliteBase) Execute(query string, args ...interface{}) error {
+func (s *SqliteBase) PrepareAndFetchAll(query string, args ...interface{}) ([]map[string]interface{}, error){
+	stmt, err := s.DbConnection.Prepare(query)
+	if err != nil{
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, execErr := stmt.Query(args...)
+	if err != nil{
+		return nil, execErr
+	}
+	defer rows.Close()
+	
+	columns, colErr := rows.Columns()
+	if colErr != nil{
+		return nil, colErr
+	}
+
+	results := []map[string]interface{}{}
+
+	for rows.Next() {
+		datas := make([]interface{}, len(columns))
+		datasPtr := make([]interface{}, len(columns))
+
+		for i := range datas{
+			datasPtr[i] = &datas[i]
+		}
+
+		if scanErr := rows.Scan(datasPtr...); scanErr != nil{
+			return nil, scanErr
+		}
+
+		rowMap := map[string]interface{}{}
+		for i, col := range columns{
+			rowMap[col] = datas[i]
+		}
+
+		results = append(results, rowMap)
+	}
+
+	return results, nil
+}
+
+func (s *SqliteBase) PrepareAndExecute(query string, args ...interface{}) error {
 	stmt, err := s.DbConnection.Prepare(query)
 	if err != nil {
 		return err

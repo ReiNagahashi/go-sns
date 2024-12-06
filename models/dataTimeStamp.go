@@ -1,26 +1,28 @@
 package models
 
+import "time"
+
 type DateTimeStamp struct{
-	createdAt string
-	updatedAt string
+	createdAt time.Time
+	updatedAt time.Time
 }
 
-func NewDateTimeStamp(createdAt, updatedAt string) *DateTimeStamp{
+func NewDateTimeStamp(createdAt, updatedAt time.Time) *DateTimeStamp{
 	return &DateTimeStamp{createdAt, updatedAt}
 }
 
-func (dateTime DateTimeStamp) GetCreatedAt()string{
+func (dateTime DateTimeStamp) GetCreatedAt()time.Time{
 	return dateTime.createdAt
 } 
 
-func (dateTime *DateTimeStamp) SetCreatedAt(createdAt string){
+func (dateTime *DateTimeStamp) SetCreatedAt(createdAt time.Time){
 	dateTime.createdAt = createdAt
 }
 
-func (dateTime DateTimeStamp) GetUpdatedAt()string{
+func (dateTime DateTimeStamp) GetUpdatedAt()time.Time{
 	return dateTime.updatedAt
 } 
 
-func (dateTime *DateTimeStamp) SetUpdatedAt(updatedAt string){
+func (dateTime *DateTimeStamp) SetUpdatedAt(updatedAt time.Time){
 	dateTime.updatedAt = updatedAt
 }
