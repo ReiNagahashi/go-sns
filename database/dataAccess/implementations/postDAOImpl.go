@@ -1,6 +1,7 @@
 package implementations
 
 import (
+	"errors"
 	"go-sns/database"
 	"go-sns/models"
 	"log"
@@ -14,13 +15,25 @@ type PostDAOImpl struct{
 }
 
 
-func (p PostDAOImpl) GetAll(offset, limit int) []models.Post{
+func (p PostDAOImpl) GetAll(limitData ...int) []models.Post{
 	db := database.NewSqliteBase()
-
 	defer db.DbConnection.Close()
-	query := "SELECT * FROM posts LIMIT ?, ?"
 
-	posts, err := db.PrepareAndFetchAll(query, []interface{}{offset, limit}...)
+	var limit int
+
+	if len(limitData) > 1 && limitData[0] > 0{
+		limit = limitData[0]
+	}else{
+		var err error
+		limit, err = db.GetTableLength("posts")
+		if err != nil{
+			log.Fatalln("action=PostDAOImpl.GetAll msg=Error executing query: ", err)
+		}
+	}
+
+	query := "SELECT * FROM posts LIMIT ?"
+
+	posts, err := db.PrepareAndFetchAll(query, []interface{}{limit}...)
 	if err != nil {
 		log.Fatalln("action=PostDAOImpl.GetAll msg=Error executing query: ", err)
 	}
@@ -35,7 +48,6 @@ func (p PostDAOImpl) Create(postData models.Post) bool{
 	}
 
 	db := database.NewSqliteBase()
-
 	defer db.DbConnection.Close()
 	query := "INSERT INTO posts (title, description, created_at, updated_at) VALUES(?,?,?,?)"
 
@@ -44,6 +56,38 @@ func (p PostDAOImpl) Create(postData models.Post) bool{
 	}
 
 	return true
+}
+
+
+func (p PostDAOImpl) Delete(id int) bool{
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+	
+	if err := db.PrepareAndExecute("DELETE FROM posts WHERE id = ?", id); err != nil{
+		log.Fatalln("action=PostDAOImpl.Delete msg=Error executing query: ", err)	
+	}
+
+	return true
+}
+
+
+func (p PostDAOImpl) ValidatePost(post models.Post) error {
+	title := post.GetTitle()
+	description := post.GetDescription()
+
+	if title == "" {
+		return errors.New("title is required")
+	}
+	if len(title) > 100 {
+		return errors.New("title must be less than 100 characters")
+	}
+	if description == "" {
+		return errors.New("description is required")
+	}
+	if len(description) > 1000 {
+		return errors.New("description must be less than 1000 characters")
+	}
+	return nil
 }
 
 
@@ -66,6 +110,6 @@ func (p PostDAOImpl) resultsToPosts(results []map[string]interface{}) []models.P
 	return posts
 }
 
-// func (p PostDAOImpl) Delete(postData models.Post) bool{
 
-// }
+
+
