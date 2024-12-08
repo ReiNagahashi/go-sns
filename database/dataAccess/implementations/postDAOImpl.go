@@ -10,9 +10,7 @@ import (
 
 
 
-type PostDAOImpl struct{
-
-}
+type PostDAOImpl struct{}
 
 
 

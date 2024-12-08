@@ -126,8 +126,62 @@ func deletePost (w http.ResponseWriter, id int){
 }
 
 
+var apiUserPath = regexp.MustCompile("^/api/users(/([0-9]+))?/?$")
+
+func userHandler(w http.ResponseWriter, r *http.Request){
+	matches := apiUserPath.FindStringSubmatch(r.URL.Path)
+	if matches == nil{
+		APIError(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	var id int
+	strId := r.URL.Query().Get("id")
+	if strId != ""{
+		var err error
+		id,err = strconv.Atoi(strId)
+		if err != nil{
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
+
+	switch r.Method {
+		case http.MethodGet:
+			if id == 0{
+				APIError(w, "ID is required for retrieve a user", http.StatusBadRequest)
+				return
+			}
+			getUserById(w, id)
+		case http.MethodPost:
+			createUser(w, r)
+		default:
+			APIError(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+
+}
+
+func createUser(w http.ResponseWriter, r *http.Request){
+	fmt.Println("CreateUser method")
+}
+
+func getUserById(w http.ResponseWriter, id int){
+	var dao interfaces.UserDAO = implementations.UserDAOImpl{}
+	user := dao.GetById(id)
+
+	js, err := json.Marshal(user)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+
 func StartWebServer() error {
 	http.HandleFunc("/api/posts", postHandler)
+	http.HandleFunc("/api/users", userHandler)
+
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), nil)
 }
