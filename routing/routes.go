@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-sns/config"
 	"go-sns/database/dataAccess/implementations"
+	"go-sns/database/dataAccess/interfaces"
 	"go-sns/models"
 	"log"
 	"net/http"
@@ -50,7 +51,11 @@ func postHandler(w http.ResponseWriter, r *http.Request){
 
 	switch r.Method {
 		case http.MethodGet:
-			getAllPosts(w)
+			if id != 0{
+				getPostById(w, id)
+			}else{
+				getAllPosts(w)
+			}
 		case http.MethodPost:
 			createPost(w, r)
 		case http.MethodDelete:
@@ -67,7 +72,7 @@ func postHandler(w http.ResponseWriter, r *http.Request){
 
 
 func getAllPosts(w http.ResponseWriter){
-	dao := implementations.PostDAOImpl{}
+	var dao interfaces.PostDAO = implementations.PostDAOImpl{}
 	posts := dao.GetAll()
 
 	js, err := json.Marshal(posts)
@@ -80,8 +85,22 @@ func getAllPosts(w http.ResponseWriter){
 }
 
 
+func getPostById(w http.ResponseWriter, id int){
+	var dao interfaces.PostDAO = implementations.PostDAOImpl{}
+	post := dao.GetById(id)
+
+	js, err := json.Marshal(post)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+
 func createPost (w http.ResponseWriter, r *http.Request){
-	dao := implementations.PostDAOImpl{}
+	var dao interfaces.PostDAO = implementations.PostDAOImpl{}
 
 	timeStamp := time.Now()
 	newPost := models.NewPost(-1, r.URL.Query().Get("title"), r.URL.Query().Get("description"), *models.NewDateTimeStamp(timeStamp, timeStamp))
@@ -98,7 +117,7 @@ func createPost (w http.ResponseWriter, r *http.Request){
 
 
 func deletePost (w http.ResponseWriter, id int){
-		dao := implementations.PostDAOImpl{}
+	var dao interfaces.PostDAO = implementations.PostDAOImpl{}
 
 		success := dao.Delete(id)
 		if !success{

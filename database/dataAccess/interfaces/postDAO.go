@@ -4,7 +4,8 @@ import "go-sns/models"
 
 type PostDAO interface{
 	Create(postData models.Post) bool
-	GetById(id int) models.Post
 	Delete(id int) bool
-	GetAll() []models.Post
+	GetAll(...int) []models.Post
+	GetById(id int) []models.Post
+	ValidatePost(postData models.Post) error
 }
