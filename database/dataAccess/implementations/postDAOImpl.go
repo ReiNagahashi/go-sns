@@ -16,7 +16,7 @@ type PostDAOImpl struct{}
 
 func (p PostDAOImpl) Create(postData models.Post) bool{
 	if(postData.GetId() != -1){
-		log.Fatalln("Cannot create a computer part with an existing ID. id: " + string(rune(postData.GetId())))
+		log.Fatalln("Cannot create a post data with an existing ID. id: " + string(rune(postData.GetId())))
 	}
 
 	db := database.NewSqliteBase()
@@ -82,26 +82,6 @@ func (p PostDAOImpl) GetById(id int) []models.Post{
 }
 
 
-func (p PostDAOImpl) ValidatePost(post models.Post) error {
-	title := post.GetTitle()
-	description := post.GetDescription()
-
-	if title == "" {
-		return errors.New("title is required")
-	}
-	if len(title) > 100 {
-		return errors.New("title must be less than 100 characters")
-	}
-	if description == "" {
-		return errors.New("description is required")
-	}
-	if len(description) > 1000 {
-		return errors.New("description must be less than 1000 characters")
-	}
-	return nil
-}
-
-
 func (p PostDAOImpl) resultToPost(post map[string]interface{}) models.Post{
 	return *models.NewPost(
 		int(post["id"].(int64)),
@@ -122,5 +102,22 @@ func (p PostDAOImpl) resultsToPosts(results []map[string]interface{}) []models.P
 }
 
 
+func (p PostDAOImpl) ValidatePostField(post models.Post) error {
+	title := post.GetTitle()
+	description := post.GetDescription()
 
+	if title == "" {
+		return errors.New("title is required")
+	}
+	if len(title) > 100 {
+		return errors.New("title must be less than 100 characters")
+	}
+	if description == "" {
+		return errors.New("description is required")
+	}
+	if len(description) > 1000 {
+		return errors.New("description must be less than 1000 characters")
+	}
+	return nil
+}
 

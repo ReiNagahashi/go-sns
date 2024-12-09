@@ -7,6 +7,7 @@ import (
 	"go-sns/database/dataAccess/implementations"
 	"go-sns/database/dataAccess/interfaces"
 	"go-sns/models"
+	"go-sns/utils"
 	"log"
 	"net/http"
 	"regexp"
@@ -105,12 +106,12 @@ func createPost (w http.ResponseWriter, r *http.Request){
 	timeStamp := time.Now()
 	newPost := models.NewPost(-1, r.URL.Query().Get("title"), r.URL.Query().Get("description"), *models.NewDateTimeStamp(timeStamp, timeStamp))
 
-	if err := dao.ValidatePost(*newPost); err != nil{
+	if err := dao.ValidatePostField(*newPost); err != nil{
 		APIError(w, "Validation Error: " + err.Error(), http.StatusBadRequest)
 	}
 	success := dao.Create(*newPost)
 	if !success{
-		APIError(w, "Data deletion failed", http.StatusInternalServerError)
+		APIError(w, "Post creation failed", http.StatusInternalServerError)
 	}
 
 }
@@ -160,8 +161,26 @@ func userHandler(w http.ResponseWriter, r *http.Request){
 
 }
 
+
 func createUser(w http.ResponseWriter, r *http.Request){
-	fmt.Println("CreateUser method")
+	var dao interfaces.UserDAO = implementations.UserDAOImpl{}
+
+	timeStamp := time.Now()
+	newUser := models.NewUser(-1, r.URL.Query().Get("name"), r.URL.Query().Get("email"), *models.NewDateTimeStamp(timeStamp, timeStamp))
+
+	if err := dao.ValidateUserField(*newUser); err != nil{
+		APIError(w, "Validation Error: " + err.Error(), http.StatusBadRequest)
+	}
+
+	password := r.URL.Query().Get("password")
+	if err := utils.ValidatePassword(password); err != nil{
+		APIError(w, "Validation Error: " + err.Error(), http.StatusBadRequest)
+	}
+
+	success := dao.Create(*newUser, password)
+	if !success{
+		APIError(w, "User creation failed", http.StatusInternalServerError)
+	}
 }
 
 func getUserById(w http.ResponseWriter, id int){

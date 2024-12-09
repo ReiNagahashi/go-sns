@@ -7,5 +7,5 @@ type PostDAO interface{
 	Delete(id int) bool
 	GetAll(...int) []models.Post
 	GetById(id int) []models.Post
-	ValidatePost(postData models.Post) error
+	ValidatePostField(postData models.Post) error
 }
