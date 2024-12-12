@@ -11,6 +11,7 @@ type ConfigList struct{
 	SQLDriver string
 	DbPath string
 	Port int
+	Session_key string
 }
 
 var Config ConfigList
@@ -27,5 +28,6 @@ func init(){
 		SQLDriver: cfg.Section("db").Key("driver").String(),
 		DbPath: cfg.Section("db").Key("path").String(),
 		Port: cfg.Section("web").Key("port").MustInt(),
+		Session_key: cfg.Section("web").Key("session_key").String(),
 	}
 }

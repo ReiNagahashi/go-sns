@@ -18,7 +18,7 @@ func (p PostDAOImpl) Create(postData models.Post) bool{
 	if(postData.GetId() != -1){
 		log.Fatalln("Cannot create a post data with an existing ID. id: " + string(rune(postData.GetId())))
 	}
-
+	
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 	query := "INSERT INTO posts (title, description, created_at, updated_at) VALUES(?,?,?,?)"
