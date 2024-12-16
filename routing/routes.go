@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-sns/config"
+	"go-sns/database"
 	"go-sns/database/dataAccess/implementations"
 	"go-sns/database/dataAccess/interfaces"
 	"go-sns/models"
@@ -53,9 +54,15 @@ func postHandler(w http.ResponseWriter, r *http.Request){
 
 
 func getAllPosts(w http.ResponseWriter){
-	var dao interfaces.PostDAO = implementations.PostDAOImpl{}
-	posts := dao.GetAll()
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
 
+	var dao interfaces.PostDAO = implementations.NewPostDAOImpl(db)
+	posts, err := dao.GetAll()
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	js, err := json.Marshal(&posts)
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -68,8 +75,15 @@ func getAllPosts(w http.ResponseWriter){
 
 
 func getPostById(w http.ResponseWriter, id int){
-	var dao interfaces.PostDAO = implementations.PostDAOImpl{}
-	post := dao.GetById(id)
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+
+	var dao interfaces.PostDAO = implementations.NewPostDAOImpl(db)
+	post, err := dao.GetById(id)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	js, err := json.Marshal(&post)
 	if err != nil{
@@ -83,7 +97,10 @@ func getPostById(w http.ResponseWriter, id int){
 
 
 func createPostHandler (w http.ResponseWriter, r *http.Request){
-	var dao interfaces.PostDAO = implementations.PostDAOImpl{}
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+
+	var dao interfaces.PostDAO = implementations.NewPostDAOImpl(db)
 
 	timeStamp := time.Now()
 	newPost := models.NewPost(-1, r.FormValue("title"), r.FormValue("description"), *models.NewDateTimeStamp(timeStamp, timeStamp))
@@ -92,9 +109,9 @@ func createPostHandler (w http.ResponseWriter, r *http.Request){
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	success := dao.Create(*newPost)
-	if !success{
-		APIError(w, "Post creation failed", http.StatusInternalServerError)
+	err := dao.Create(*newPost)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -102,7 +119,10 @@ func createPostHandler (w http.ResponseWriter, r *http.Request){
 
 
 func deletePostHandler (w http.ResponseWriter, r *http.Request){
-	var dao interfaces.PostDAO = implementations.PostDAOImpl{}
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+
+	var dao interfaces.PostDAO = implementations.NewPostDAOImpl(db)
 
 	vars := mux.Vars(r)
 	strId := vars["id"]
@@ -117,9 +137,9 @@ func deletePostHandler (w http.ResponseWriter, r *http.Request){
 		return
 	}
 	
-	success := dao.Delete(id)
-	if !success{
-		APIError(w, "Data deletion failed", http.StatusInternalServerError)
+	err = dao.Delete(id)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
