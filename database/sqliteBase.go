@@ -95,3 +95,14 @@ func (s *SqliteBase) GetTableLength(tableName string)(int, error){
 
 	return count, nil
 }
+
+
+func (s *SqliteBase) GetLastInsertedId()(int, error){
+	var lastInsertId int
+	err := s.DbConnection.QueryRow("SELECT last_insert_rowid()").Scan(&lastInsertId)
+	if err != nil{
+		return -1, err
+	}
+	
+	return lastInsertId, nil
+}

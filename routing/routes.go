@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"go-sns/config"
 	"go-sns/database"
-	"go-sns/database/dataAccess/implementations"
+	"go-sns/database/dataAccess/implementations/userImpl"
+	"go-sns/database/dataAccess/implementations/postImpl"
 	"go-sns/database/dataAccess/interfaces"
 	"go-sns/models"
 	"go-sns/utils"
@@ -57,7 +58,7 @@ func getAllPosts(w http.ResponseWriter){
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
-	var dao interfaces.PostDAO = implementations.NewPostDAOImpl(db)
+	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
 	posts, err := dao.GetAll()
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,7 +79,7 @@ func getPostById(w http.ResponseWriter, id int){
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
-	var dao interfaces.PostDAO = implementations.NewPostDAOImpl(db)
+	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
 	post, err := dao.GetById(id)
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -100,7 +101,7 @@ func createPostHandler (w http.ResponseWriter, r *http.Request){
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
-	var dao interfaces.PostDAO = implementations.NewPostDAOImpl(db)
+	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
 
 	timeStamp := time.Now()
 	newPost := models.NewPost(-1, r.FormValue("title"), r.FormValue("description"), *models.NewDateTimeStamp(timeStamp, timeStamp))
@@ -122,7 +123,7 @@ func deletePostHandler (w http.ResponseWriter, r *http.Request){
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
-	var dao interfaces.PostDAO = implementations.NewPostDAOImpl(db)
+	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
 
 	vars := mux.Vars(r)
 	strId := vars["id"]
@@ -156,10 +157,16 @@ func userHandler(w http.ResponseWriter, r *http.Request){
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
-	var dao interfaces.UserDAO = implementations.UserDAOImpl{}
-	user := dao.GetById(id)
 
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+	
+	dao := userImpl.NewUserDAOImpl(db)
+	user, err := dao.GetById(id)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	js, err := json.Marshal(&user)
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -172,7 +179,10 @@ func userHandler(w http.ResponseWriter, r *http.Request){
 
 
 func registerHandler(w http.ResponseWriter, r *http.Request){
-	var dao interfaces.UserDAO = implementations.UserDAOImpl{}
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+
+	dao := userImpl.NewUserDAOImpl(db)
 
 	timeStamp := time.Now()
 	newUser := models.NewUser(-1, r.FormValue("name"), r.FormValue("email"), *models.NewDateTimeStamp(timeStamp, timeStamp))
@@ -188,9 +198,9 @@ func registerHandler(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	success := dao.Create(newUser, password)
-	if !success{
-		APIError(w, "User creation failed", http.StatusInternalServerError)
+	err := dao.Create(newUser, password)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -203,7 +213,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request){
 
 // Login & Logout
 func loginHandler(w http.ResponseWriter, r *http.Request){
-	userDao := implementations.UserDAOImpl{}
+	userDao := userImpl.UserDAOImpl{}
 	name := r.FormValue("name")
 	email := r.FormValue("email")
 	password := r.FormValue("password")

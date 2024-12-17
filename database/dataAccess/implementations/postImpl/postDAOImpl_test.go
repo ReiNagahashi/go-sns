@@ -1,9 +1,8 @@
-package interfaces_test
+package postImpl
 
 import (
 	"errors"
 	"fmt"
-	"go-sns/database/dataAccess/implementations"
 	"go-sns/database/mocks"
 	"go-sns/models"
 	"testing"
@@ -18,7 +17,6 @@ import (
 // カラム内容に関係なく、PrepareAndExecuteがdao.Createによって呼び出されたかどうかをチェックする
 func TestCreate_Success(t *testing.T){
 	mockDB := new(mocks.Database)
-	now := time.Now().Truncate(time.Second)
 	// mock.Anythingとすることで、カラム内容を重視ししないことにしている
     mockDB.On(
         "PrepareAndExecute",
@@ -28,11 +26,12 @@ func TestCreate_Success(t *testing.T){
         mock.Anything,
         mock.Anything,
     ).Return(nil)
-
+	
+	now := time.Now().Truncate(time.Second)
 	timestamp := models.NewDateTimeStamp(now, now)
 	post := models.NewPost(-1, "Test Title", "Test Description", *timestamp)
-
-	dao := implementations.NewPostDAOImpl(mockDB)
+	
+	dao := NewPostDAOImpl(mockDB)
 	err := dao.Create(*post)
 
 	assert.NoError(t, err)
@@ -42,7 +41,7 @@ func TestCreate_Success(t *testing.T){
 
 func TestCreate_InvalidID(t *testing.T){
 	mockDB := new(mocks.Database)
-	dao := implementations.NewPostDAOImpl(mockDB)
+	dao := NewPostDAOImpl(mockDB)
 
 	invalidID := 1
 	post := models.NewPost(invalidID, "Test Title", "Test Description", models.DateTimeStamp{})
@@ -63,7 +62,7 @@ func TestDelete_Success(t *testing.T){
 		mock.Anything,
 		mock.Anything).
 			Return(nil)
-	dao := implementations.NewPostDAOImpl(mockDB)
+	dao := NewPostDAOImpl(mockDB)
 
 	id := 1
 	err := dao.Delete(id)
@@ -83,7 +82,7 @@ func TestDelete_QueryExecutionFailure(t *testing.T) {
 		-10).
 			Return(queryError)
 
-	dao := implementations.NewPostDAOImpl(mockDB)
+	dao := NewPostDAOImpl(mockDB)
 
 	id := -10
 	err := dao.Delete(id)
@@ -124,7 +123,7 @@ func TestGetAll_Success(t *testing.T){
 		mock.Anything,
 		recordSize).Return(generateMockPosts(recordSize, now), nil)
 
-	dao := implementations.NewPostDAOImpl(mockDB)
+	dao := NewPostDAOImpl(mockDB)
 
 	posts, err := dao.GetAll()
 
@@ -153,7 +152,7 @@ func TestGetAllWithLimit_Success(t *testing.T){
 		mock.Anything,
 		limit).Return(generateMockPosts(limit,now), nil)
 
-	dao := implementations.NewPostDAOImpl(mockDB)
+	dao := NewPostDAOImpl(mockDB)
 
 	posts, err := dao.GetAll(limit)
 
@@ -191,7 +190,7 @@ func TestGetById_Success(t *testing.T){
 			},
 		}, nil)
 
-	dao := implementations.NewPostDAOImpl(mockDB)
+	dao := NewPostDAOImpl(mockDB)
 
 	post, err := dao.GetById(id)
 
@@ -211,7 +210,7 @@ func TestGetById_NotFound(t *testing.T){
 	mockDB.On("PrepareAndFetchAll", mock.Anything, invalidId).
 		Return([]map[string]interface{}{}, nil)
 	
-	dao := implementations.NewPostDAOImpl(mockDB)
+	dao := NewPostDAOImpl(mockDB)
 	post, err := dao.GetById(invalidId)
 
 	assert.Error(t, err)

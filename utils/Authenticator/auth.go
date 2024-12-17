@@ -3,7 +3,8 @@ package Authenticator
 import (
 	"errors"
 	"go-sns/config"
-	"go-sns/database/dataAccess/implementations"
+	"go-sns/database"
+	"go-sns/database/dataAccess/implementations/userImpl"
 	"go-sns/models"
 	"go-sns/utils"
 	"net/http"
@@ -19,8 +20,15 @@ const sessionName = "user-session"
 
 
 func AuthenTicate(email, password string, w http.ResponseWriter, r *http.Request) (*models.User, error){
-	userDao := implementations.UserDAOImpl{}
-	authenticatedUser = userDao.GetByEmail(email)
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+	
+	userDao := userImpl.NewUserDAOImpl(db)
+	
+	authenticatedUser, err := userDao.GetByEmail(email)
+	if err != nil{
+		return nil, err
+	}
 
 	if unsafe.Sizeof(authenticatedUser) == 0{
 		return nil, errors.New("could not retrieve user by specified email" + email)
@@ -28,9 +36,9 @@ func AuthenTicate(email, password string, w http.ResponseWriter, r *http.Request
 	hashedPassword := userDao.GetHashedPasswordById(authenticatedUser.GetId())
 
 	if utils.CheckPasswordHash(password, hashedPassword){
-		LoginAsUser(authenticatedUser, w, r)
+		LoginAsUser(*authenticatedUser, w, r)
 
-		return &authenticatedUser, nil
+		return authenticatedUser, nil
 	}
 
 	return nil, errors.New("invalid password")
@@ -74,9 +82,13 @@ func RetrieveAuthenticatedUser(r *http.Request)error {
 	if session.Values["userID"] == nil{
 		return nil
 	}
-	userDao := implementations.UserDAOImpl{}
+	userDao := userImpl.UserDAOImpl{}
+	user, err := userDao.GetById(session.Values["userID"].(int))
+	if err != nil{
+		return err
+	}
 
-	authenticatedUser = userDao.GetById(session.Values["userID"].(int))
+	authenticatedUser = *user
 
 	return nil
 }

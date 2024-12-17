@@ -9,6 +9,34 @@ type Database struct {
 	mock.Mock
 }
 
+// GetLastInsertedId provides a mock function with no fields
+func (_m *Database) GetLastInsertedId() (int, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLastInsertedId")
+	}
+
+	var r0 int
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (int, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() int); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTableLength provides a mock function with given fields: tableName
 func (_m *Database) GetTableLength(tableName string) (int, error) {
 	ret := _m.Called(tableName)
