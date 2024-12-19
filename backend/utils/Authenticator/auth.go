@@ -98,6 +98,7 @@ func IsLoggedIn(r *http.Request) (bool, error){
 	if err := RetrieveAuthenticatedUser(r); err != nil{
 		return false, errors.New(err.Error())
 	}
+	
 	// ユーザーインスタンスが空であるかどうかをチェック
 	if unsafe.Sizeof(authenticatedUser) == 0{
 		return false, nil

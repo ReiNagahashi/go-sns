@@ -12,17 +12,17 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestCreate_Success(t *testing.T){
+func TestCreate_Success(t *testing.T) {
 	mockDB := new(mocks.Database)
 	mockDB.On(
-        "PrepareAndExecute",
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-    ).Return(nil)
+		"PrepareAndExecute",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
 
 	mockDB.On("GetLastInsertedId").Return(1, nil)
 
@@ -32,41 +32,40 @@ func TestCreate_Success(t *testing.T){
 	user := models.NewUser(-1, "Test User", "Test Email", *timestamp)
 	password := "Abcd1234!"
 	err := dao.Create(user, password)
-	
+
 	assert.NoError(t, err)
 	mockDB.AssertExpectations(t)
 }
 
-func TestCreate_InvalidID(t *testing.T){
+func TestCreate_InvalidID(t *testing.T) {
 	mockDB := new(mocks.Database)
 	dao := NewUserDAOImpl(mockDB)
 
 	invalidID := 1
 	user := models.NewUser(invalidID, "Test User", "Test Email", models.DateTimeStamp{})
-	
+
 	password := "Abcd1234!"
 	err := dao.Create(user, password)
 
-	expectedError := "action=UserDAOImpl.Create msg=Cannot create a user data with an existing ID. id: "  + string(rune(invalidID))
+	expectedError := "action=UserDAOImpl.Create msg=Cannot create a user data with an existing ID. id: " + string(rune(invalidID))
 	assert.Error(t, err)
 	assert.Equal(t, expectedError, err.Error())
 	mockDB.AssertNotCalled(t, "PrepareAndExecute")
 }
-
 
 func TestCreate_QueryExecutionFailure(t *testing.T) {
 	mockDB := new(mocks.Database)
 
 	queryError := errors.New("database error")
 	mockDB.On(
-        "PrepareAndExecute",
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-    ).Return(queryError)
+		"PrepareAndExecute",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(queryError)
 
 	now := time.Now().Truncate(time.Second)
 	dao := NewUserDAOImpl(mockDB)
@@ -86,14 +85,14 @@ func TestCreate_FetchingIdQueryFailure(t *testing.T) {
 	mockDB := new(mocks.Database)
 
 	mockDB.On(
-        "PrepareAndExecute",
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-        mock.Anything,
-    ).Return(nil)
+		"PrepareAndExecute",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
 
 	fetchingError := errors.New("database error")
 
@@ -112,24 +111,24 @@ func TestCreate_FetchingIdQueryFailure(t *testing.T) {
 	mockDB.AssertExpectations(t)
 }
 
-func TestGetById_Success(t *testing.T){
+func TestGetById_Success(t *testing.T) {
 	var id int = 10
 	expectedName := fmt.Sprintf("Test name %v", id)
-    now := time.Now().Truncate(time.Second)
+	now := time.Now().Truncate(time.Second)
 	mockDB := new(mocks.Database)
 	mockDB.On(
 		"PrepareAndFetchAll",
 		mock.Anything,
 		id).Return([]map[string]interface{}{
-			{
-				"id":          id,
-				"name":       expectedName,
-				"email": "",
-				"password": "",
-				"created_at":  now,
-				"updated_at":  now,
-			},
-		}, nil)
+		{
+			"id":         id,
+			"name":       expectedName,
+			"email":      "",
+			"password":   "",
+			"created_at": now,
+			"updated_at": now,
+		},
+	}, nil)
 
 	dao := NewUserDAOImpl(mockDB)
 
@@ -138,19 +137,18 @@ func TestGetById_Success(t *testing.T){
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, id, user.GetId())
-	assert.Equal(t, expectedName, user.Getname())
+	assert.Equal(t, expectedName, user.GetName())
 
 	mockDB.AssertExpectations(t)
 }
 
-
-func TestGetById_NotFound(t *testing.T){
+func TestGetById_NotFound(t *testing.T) {
 	var invalidId int = -1
 
 	mockDB := new(mocks.Database)
 	mockDB.On("PrepareAndFetchAll", mock.Anything, invalidId).
 		Return([]map[string]interface{}{}, nil)
-	
+
 	dao := NewUserDAOImpl(mockDB)
 	user, err := dao.GetById(invalidId)
 

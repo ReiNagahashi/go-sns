@@ -105,7 +105,7 @@ func (p PostDAOImpl) ValidatePostField(post models.Post) error {
 	title := post.GetTitle()
 	description := post.GetDescription()
 
-	if title == "" {
+	if len(title) == 0 {
 		return errors.New("title is required")
 	}
 	if len(title) > 100 {

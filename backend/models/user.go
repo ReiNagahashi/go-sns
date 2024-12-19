@@ -3,17 +3,17 @@ package models
 import "encoding/json"
 
 type User struct {
-	id          int
-	name       	string
-	email 		string
-	timeStamp   DateTimeStamp
+	id        int
+	name      string
+	email     string
+	timeStamp DateTimeStamp
 }
 
 type userJSON struct {
-	ID          int           `json:"id"`
-	Name       	string        `json:"name"`
-	Email 		string        `json:"email"`
-	TimeStamp   DateTimeStamp `json:"timeStamp"`
+	ID        int           `json:"id"`
+	Name      string        `json:"name"`
+	Email     string        `json:"email"`
+	TimeStamp DateTimeStamp `json:"timeStamp"`
 }
 
 func NewUser(id int, name, email string, timeStamp DateTimeStamp) *User {
@@ -28,19 +28,19 @@ func (u *User) SetId(id int) {
 	u.id = id
 }
 
-func (u User) Getname() string {
+func (u User) GetName() string {
 	return u.name
 }
 
-func (u *User) Setname(name string) {
+func (u *User) SetName(name string) {
 	u.name = name
 }
 
-func (u User) Getemail() string {
+func (u User) GetEmail() string {
 	return u.email
 }
 
-func (u *User) Setemail(email string) {
+func (u *User) SetEmail(email string) {
 	u.email = email
 }
 
@@ -58,10 +58,10 @@ func (u *User) GetFields() []interface{} {
 
 func (u *User) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&userJSON{
-		ID:         u.id,
-		Name:       u.name,
-		Email: 		u.email,
-		TimeStamp:  u.timeStamp,
+		ID:        u.id,
+		Name:      u.name,
+		Email:     u.email,
+		TimeStamp: u.timeStamp,
 	})
 }
 
@@ -74,6 +74,6 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	u.name = uj.Name
 	u.email = uj.Email
 	u.timeStamp = uj.TimeStamp
-	
+
 	return nil
 }
