@@ -1,17 +1,26 @@
 version: "3.8"
 services:
   frontend:
-    build:
-      context: ./frontend/react-app
+    build: ./frontend/react-app
     ports:
       - "3000:3000"
     depends_on:
       - backend
+    volumes:
+      - ./frontend/react-app:/app
+    stdin_open: true
+    tty: true
 
   backend:
-    build:
-      context: ./backend
+    build: ./backend
     ports:
       - "8080:8080"
     volumes:
-      - "./backend/database/database.db" # SQLiteデータベースの永続化
+      - "./backend:/app"
+    depends_on:
+      - db
+
+  db:
+  image: sqlite3
+  volumes:
+    - "./backend/database/db:"
