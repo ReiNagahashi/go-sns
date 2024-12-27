@@ -25,13 +25,12 @@ function Login() {
 
     const handleSubmit = async(e) => {
         e.preventDefault();
-        console.log('Logging in with data:', formValue);
         try {
             let formData = new FormData();
             formData.append("email", formValue.email)
             formData.append("password", formValue.password)
 
-            await axios.post(`${API_BASE_URL}/auth/login`, formData);
+            await axios.post(`${API_BASE_URL}/auth/login`, formData, { withCredentials: true });
             setIsLoggedIn(true);
             navigate("/");
         } catch (error) {

@@ -1,15 +1,13 @@
 import API_BASE_URL from "../config";
+import axios from "axios";
 
 export const checkSession = async () => {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/isLoggedIn`, {
-            method: "GET",
-            credentials: "include",
+        const response = await axios.get(`${API_BASE_URL}/auth/isLoggedIn`, {
+            withCredentials: true
         });
-        if(!response.ok){
-            throw new Error("Failed to check session");
-        }
-        const isLoggedIn = await response.json();
+
+        const isLoggedIn = response.data;
         
         return isLoggedIn;
     }catch(error){

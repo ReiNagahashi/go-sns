@@ -12,6 +12,9 @@ const Navbar = () => {
         const verifySession = async () => {
             const loggedIn = await checkSession();
             setIsLoggedIn(loggedIn);
+            if(!loggedIn){
+                navigate("/login")
+            }
         };
         verifySession();
     }, []);

@@ -1,25 +1,42 @@
 import React, { useState } from 'react';
+import axios from "axios";
 import "../css/LoginRegister.css";
+import API_BASE_URL from '../config';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Register() {
-    const [formData, setFormData] = useState({
-        username: '',
+    const navigate = useNavigate();
+    const [formValue, setFormValue] = useState({
+        name: '',
         email: '',
         password: '',
     });
+    const {setIsLoggedIn} = useAuth();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
-            ...formData,
+        setFormValue({
+            ...formValue,
             [name]: value,
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async(e) => {
         e.preventDefault();
-        console.log('Registering with data:', formData);
-        // API呼び出しを実装
+        
+        try {
+            let formData = new FormData();
+            formData.append("name", formValue.name)
+            formData.append("email", formValue.email)
+            formData.append("password", formValue.password)
+
+            await axios.post(`${API_BASE_URL}/users/register`, formData, { withCredentials: true });
+            setIsLoggedIn(true);
+            navigate("/");
+        } catch (error) {
+            console.error("Error login:", error);
+        }
     };
 
     return (
@@ -27,11 +44,11 @@ function Register() {
             <form onSubmit={handleSubmit}>
             <h2>Register</h2>
             <label>
-                Username:
+                Name:
                 <input
                 type="text"
-                name="username"
-                value={formData.username}
+                name="name"
+                value={formValue.name}
                 onChange={handleChange}
                 required
                 />
@@ -42,7 +59,7 @@ function Register() {
                 <input
                 type="email"
                 name="email"
-                value={formData.email}
+                value={formValue.email}
                 onChange={handleChange}
                 required
                 />
@@ -53,7 +70,7 @@ function Register() {
                 <input
                 type="password"
                 name="password"
-                value={formData.password}
+                value={formValue.password}
                 onChange={handleChange}
                 required
                 />

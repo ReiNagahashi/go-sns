@@ -34,7 +34,7 @@ function Home() {
             formData.append("title", newPost.title)
             formData.append("description", newPost.description)
 
-            await axios.post(API_BASE_URL, formData);
+            await axios.post(`${API_BASE_URL}/posts`, formData);
             setNewPost({ title: "", description: "" });
             fetchPosts();
         } catch (error) {
@@ -44,7 +44,8 @@ function Home() {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`${API_BASE_URL}/${id}`);
+            console.log(`${API_BASE_URL}/posts/${id}`);
+            await axios.delete(`${API_BASE_URL}/posts/${id}`);
             fetchPosts();
         } catch (error) {
             console.error("Error deleting post:", error);
