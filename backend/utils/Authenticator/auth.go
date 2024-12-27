@@ -7,16 +7,14 @@ import (
 	"go-sns/database/dataAccess/implementations/userImpl"
 	"go-sns/models"
 	"go-sns/utils"
+	"log"
 	"net/http"
-	"unsafe"
 
-	"github.com/gorilla/sessions"
 )
 
 
-var authenticatedUser models.User
-var store = sessions.NewCookieStore([]byte(config.Config.Session_key))
-const sessionName = "user-session"
+var authenticatedUser *models.User
+const sessionName = "user_session"
 
 
 func AuthenTicate(email, password string, w http.ResponseWriter, r *http.Request) (*models.User, error){
@@ -30,13 +28,13 @@ func AuthenTicate(email, password string, w http.ResponseWriter, r *http.Request
 		return nil, err
 	}
 
-	if unsafe.Sizeof(authenticatedUser) == 0{
+	if authenticatedUser == nil{
 		return nil, errors.New("could not retrieve user by specified email" + email)
 	}
 	hashedPassword := userDao.GetHashedPasswordById(authenticatedUser.GetId())
 
 	if utils.CheckPasswordHash(password, hashedPassword){
-		LoginAsUser(*authenticatedUser, w, r)
+		LoginAsUser(authenticatedUser, w, r)
 
 		return authenticatedUser, nil
 	}
@@ -45,27 +43,34 @@ func AuthenTicate(email, password string, w http.ResponseWriter, r *http.Request
 	
 }
 
-func LoginAsUser(user models.User, w http.ResponseWriter, r *http.Request) error{
+func LoginAsUser(user *models.User, w http.ResponseWriter, r *http.Request) error{
 	if user.GetId() == -1{
 		return errors.New("cannnot login a user with no ID")
 	}
-	session, err := store.Get(r, sessionName)
+
+	session, err := config.Store.Get(r, sessionName)
 	if err != nil {
 		return err
 	}
 
 	session.Values["userID"] = user.GetId()
-	session.Save(r, w)
+	session.Values["test"] = "Helloworld"
+
+	if saveErr := session.Save(r, w); saveErr != nil{
+		log.Fatalln(saveErr.Error())
+	}
+
 
 	return nil
 }
 
 
 func Logout(w http.ResponseWriter, r *http.Request) error {
-	session, err := store.Get(r, sessionName)
+	session, err := config.Store.Get(r, sessionName)
 	if err != nil{
 		return err
 	}
+	authenticatedUser = nil
 	delete(session.Values, "userID")
 	session.Save(r, w)
 
@@ -74,7 +79,7 @@ func Logout(w http.ResponseWriter, r *http.Request) error {
 
 
 func RetrieveAuthenticatedUser(r *http.Request)error {
-	session, err := store.Get(r, sessionName)
+	session, err := config.Store.Get(r, sessionName)
 	if err != nil{
 		return err
 	}
@@ -82,13 +87,18 @@ func RetrieveAuthenticatedUser(r *http.Request)error {
 	if session.Values["userID"] == nil{
 		return nil
 	}
-	userDao := userImpl.UserDAOImpl{}
+
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+
+	userDao := userImpl.NewUserDAOImpl(db)
+
 	user, err := userDao.GetById(session.Values["userID"].(int))
 	if err != nil{
 		return err
 	}
 
-	authenticatedUser = *user
+	authenticatedUser = user
 
 	return nil
 }
@@ -98,9 +108,9 @@ func IsLoggedIn(r *http.Request) (bool, error){
 	if err := RetrieveAuthenticatedUser(r); err != nil{
 		return false, errors.New(err.Error())
 	}
-	
+
 	// ユーザーインスタンスが空であるかどうかをチェック
-	if unsafe.Sizeof(authenticatedUser) == 0{
+	if authenticatedUser == nil{
 		return false, nil
 	}
 

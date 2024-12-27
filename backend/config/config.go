@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"github.com/gorilla/sessions"
 	"gopkg.in/ini.v1"
 )
 
@@ -15,6 +16,9 @@ type ConfigList struct{
 }
 
 var Config ConfigList
+
+var Store *sessions.CookieStore
+
 
 func init(){
     configPath := os.Getenv("CONFIG_PATH")
@@ -34,5 +38,14 @@ func init(){
 		DbPath: cfg.Section("db").Key("path").String(),
 		Port: cfg.Section("web").Key("port").MustInt(),
 		Session_key: cfg.Section("web").Key("session_key").String(),
+	}
+
+	Store = sessions.NewCookieStore([]byte(Config.Session_key))
+
+	Store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   3600,
+		HttpOnly: true,  // クッキーをJavaScriptからアクセス不能にする
+		Secure:   false, // HTTPSのみでセッションクッキーを送信する
 	}
 }

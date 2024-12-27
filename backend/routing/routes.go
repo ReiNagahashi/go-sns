@@ -200,7 +200,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := Authenticator.LoginAsUser(*newUser, w, r); err != nil {
+	if err := Authenticator.LoginAsUser(newUser, w, r); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -249,14 +249,14 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	if err := Authenticator.Logout(w, r); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	fmt.Println("User Logout successfully!!!")
+
 }
 
 func StartWebServer() error {
 	r := mux.NewRouter()
 
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "DELETE"},
 		AllowedHeaders:   []string{"Content-Type"},
 		AllowCredentials: true,
