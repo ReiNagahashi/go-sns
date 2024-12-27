@@ -1,26 +1,37 @@
-version: "3.8"
 services:
   frontend:
-    build: ./frontend/react-app
+    build:
+      context: ./frontend/react-app
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend/react-app:/app
-    stdin_open: true
-    tty: true
+    networks:
+      - go-sns-network
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+      - ./backend/database/database.db:/app/database/database.db
     ports:
       - "8080:8080"
-    volumes:
-      - "./backend:/app"
-    depends_on:
-      - db
+    networks:
+      - go-sns-network
 
-  db:
-  image: sqlite3
-  volumes:
-    - "./backend/database/db:"
+  # nginx:
+  #   image: nginx:latest
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - frontend
+  #     - backend
+  #   networks:
+  #     - go-sns-network
+networks:
+  go-sns-network:

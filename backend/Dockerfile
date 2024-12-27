@@ -2,18 +2,16 @@
 FROM golang:1.23.4
 
 # 作業ディレクトリを設定
-WORKDIR /backend
+WORKDIR /app
 
 # Goモジュールとアプリケーションコードをコピー
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
-
-# アプリケーションをビルド
-RUN go build -o main .
+COPY . ./
 
 # 開放するポート
 EXPOSE 8080
 
 # バックエンドを起動
-CMD ["./main"]
+CMD ["go", "run", "main.go"]
+

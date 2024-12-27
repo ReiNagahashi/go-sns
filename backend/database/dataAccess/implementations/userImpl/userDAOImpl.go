@@ -82,7 +82,6 @@ func (u UserDAOImpl) GetById(id int) (*models.User, error) {
 		return nil, fmt.Errorf("no user found with id %d", id)
 	}
 	
-	fmt.Println(results[0]["name"])
 	user := u.resultToUser(results[0])
 	return &user, nil
 }

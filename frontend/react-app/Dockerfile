@@ -2,20 +2,18 @@
 FROM node:20
 
 # 作業ディレクトリを設定
-WORKDIR /react-app
+WORKDIR /app
 
 # 必要なファイルをコピー
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 
 # アプリケーションコードをコピー
-COPY . .
+COPY . ./
 
-# ビルド
-RUN npm run build
-
-# 開放するポート
 EXPOSE 3000
 
-# サーバーを起動
-CMD ["npx", "serve", "-s", "build"]
+
+# ビルド
+CMD ["npm", "run", "dev", "--", "--host"]
+
