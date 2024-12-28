@@ -7,8 +7,9 @@ import (
 	"log"
 )
 
-// TODO Postマンで登録、ログインをフォームデータでテストする
 func main(){
 	utils.LoggingSettings(config.Config.LogFile)
+	utils.RunMigrations()
+	utils.RunSeedings()
 	log.Println(routing.StartWebServer())
 }
