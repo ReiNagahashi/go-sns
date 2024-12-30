@@ -26,5 +26,5 @@ func UserSeed(SqliteBase *database.SqliteBase){
         }
     }
 
-    fmt.Println("Seeding Completed")
+    fmt.Println("User Seeding Completed")
 }

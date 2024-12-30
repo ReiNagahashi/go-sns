@@ -25,5 +25,5 @@ func PostSeed(SqliteBase *database.SqliteBase){
         }
     }
 
-    fmt.Println("Seeding Completed")
+    fmt.Println("Post Seeding Completed")
 }
