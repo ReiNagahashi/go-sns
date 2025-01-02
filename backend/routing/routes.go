@@ -102,7 +102,9 @@ func createPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
 	timeStamp := time.Now()
-	newPost := models.NewPost(-1, r.FormValue("title"), r.FormValue("description"), *models.NewDateTimeStamp(timeStamp, timeStamp))
+	authUser := Authenticator.GetAuthenticatedUser(r)
+
+	newPost := models.NewPost(-1, authUser.GetId(), r.FormValue("title"), r.FormValue("description"), *models.NewDateTimeStamp(timeStamp, timeStamp))
 
 	if err := dao.ValidatePostField(*newPost); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

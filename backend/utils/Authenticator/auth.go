@@ -2,6 +2,7 @@ package Authenticator
 
 import (
 	"errors"
+	"fmt"
 	"go-sns/config"
 	"go-sns/database"
 	"go-sns/database/dataAccess/implementations/userImpl"
@@ -9,42 +10,40 @@ import (
 	"go-sns/utils"
 	"log"
 	"net/http"
-
 )
 
-
 var authenticatedUser *models.User
+
 const sessionName = "user_session"
 
-
-func AuthenTicate(email, password string, w http.ResponseWriter, r *http.Request) (*models.User, error){
+func AuthenTicate(email, password string, w http.ResponseWriter, r *http.Request) (*models.User, error) {
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
-	
+
 	userDao := userImpl.NewUserDAOImpl(db)
-	
+
 	authenticatedUser, err := userDao.GetByEmail(email)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
-	if authenticatedUser == nil{
+	if authenticatedUser == nil {
 		return nil, errors.New("could not retrieve user by specified email" + email)
 	}
 	hashedPassword := userDao.GetHashedPasswordById(authenticatedUser.GetId())
 
-	if utils.CheckPasswordHash(password, hashedPassword){
+	if utils.CheckPasswordHash(password, hashedPassword) {
 		LoginAsUser(authenticatedUser, w, r)
 
 		return authenticatedUser, nil
 	}
 
 	return nil, errors.New("invalid password")
-	
+
 }
 
-func LoginAsUser(user *models.User, w http.ResponseWriter, r *http.Request) error{
-	if user.GetId() == -1{
+func LoginAsUser(user *models.User, w http.ResponseWriter, r *http.Request) error {
+	if user.GetId() == -1 {
 		return errors.New("cannnot login a user with no ID")
 	}
 
@@ -56,18 +55,16 @@ func LoginAsUser(user *models.User, w http.ResponseWriter, r *http.Request) erro
 	session.Values["userID"] = user.GetId()
 	session.Values["test"] = "Helloworld"
 
-	if saveErr := session.Save(r, w); saveErr != nil{
+	if saveErr := session.Save(r, w); saveErr != nil {
 		log.Fatalln(saveErr.Error())
 	}
-
 
 	return nil
 }
 
-
 func Logout(w http.ResponseWriter, r *http.Request) error {
 	session, err := config.Store.Get(r, sessionName)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	authenticatedUser = nil
@@ -77,14 +74,22 @@ func Logout(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+func GetAuthenticatedUser(r *http.Request) *models.User {
+	if err := RetrieveAuthenticatedUser(r); err != nil {
+		fmt.Printf("action=RetrieveAuthenticatedUser, Content= %v", err)
+		return nil
+	}
 
-func RetrieveAuthenticatedUser(r *http.Request)error {
+	return authenticatedUser
+}
+
+func RetrieveAuthenticatedUser(r *http.Request) error {
 	session, err := config.Store.Get(r, sessionName)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
-	if session.Values["userID"] == nil{
+	if session.Values["userID"] == nil {
 		return nil
 	}
 
@@ -94,7 +99,7 @@ func RetrieveAuthenticatedUser(r *http.Request)error {
 	userDao := userImpl.NewUserDAOImpl(db)
 
 	user, err := userDao.GetById(session.Values["userID"].(int))
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
@@ -103,14 +108,13 @@ func RetrieveAuthenticatedUser(r *http.Request)error {
 	return nil
 }
 
-
-func IsLoggedIn(r *http.Request) (bool, error){
-	if err := RetrieveAuthenticatedUser(r); err != nil{
+func IsLoggedIn(r *http.Request) (bool, error) {
+	if err := RetrieveAuthenticatedUser(r); err != nil {
 		return false, errors.New(err.Error())
 	}
 
 	// ユーザーインスタンスが空であるかどうかをチェック
-	if authenticatedUser == nil{
+	if authenticatedUser == nil {
 		return false, nil
 	}
 

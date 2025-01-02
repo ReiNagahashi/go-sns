@@ -23,7 +23,7 @@ func (p PostDAOImpl) Create(postData models.Post) error{
 		return errors.New("action=PostDAOImpl.Create msg=Cannot create a post data with an existing ID. id: " + string(rune(postData.GetId())))
 	}
 	
-	query := "INSERT INTO posts (title, description, created_at, updated_at) VALUES(?,?,?,?)"
+	query := "INSERT INTO posts (title, description, submitted_by, created_at, updated_at) VALUES(?,?,?,?,?)"
 
 	if err := p.db.PrepareAndExecute(query, postData.GetFields()...); err != nil {
 		return errors.New("action=PostDAOImpl.Create msg=Error executing query: " + err.Error())
@@ -84,6 +84,7 @@ func (p PostDAOImpl) GetById(id int) (*models.Post, error){
 func (p PostDAOImpl) resultToPost(post map[string]interface{}) models.Post{
 	return *models.NewPost(
 		int(post["id"].(int64)),
+		int(post["submitted_by"].(int64)),
 		post["title"].(string),
 		post["description"].(string),
 		*models.NewDateTimeStamp(post["created_at"].(time.Time), post["updated_at"].(time.Time)))

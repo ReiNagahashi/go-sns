@@ -1,6 +1,6 @@
 # database files
 *.db
-*.sql
+database.sql
 # environmental  variables
 .ini
 config.ini

@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - main
-    pull_request:
-      branches:
-        - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
@@ -23,5 +23,5 @@ jobs:
       
       - name: Run tests
         env:
-          BASE_PATH: ${{ github.workspace }} #テスト実行時に絶対パスを渡すことで、テストファイルがどこにあっても構成ファイルを読み込める
+          CONFIG_PATH: '%{${{ github.workspace }}}/backend/config.ini' #テスト実行時に絶対パスを渡すことで、テストファイルがどこにあっても構成ファイルを読み込める
         run: go test ./...

@@ -19,6 +19,11 @@ func RunMigrations(){
 
 	defer db.Close()
 
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
+	if err != nil{
+		log.Fatalf("failed to enable foreign keys: %v", err)
+	}
+
 	if err := goose.SetDialect("sqlite3"); err != nil{
 		log.Fatalf("failed to set dialect: %v", err)
 	}
