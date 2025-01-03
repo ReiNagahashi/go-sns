@@ -106,7 +106,16 @@ func (_m *Database) PrepareAndFetchAll(query string, args ...interface{}) ([]map
 		r0 = rf(query, args...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]map[string]interface{})
+			intermediate := ret.Get(0).([]map[string]interface{})
+			for i, row := range intermediate {
+				for key, value := range row {
+					if v, ok := value.(int); ok {
+						row[key] = int64(v)
+					}
+				}
+				intermediate[i] = row
+			}
+			r0 = intermediate
 		}
 	}
 

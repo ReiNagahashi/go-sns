@@ -25,11 +25,12 @@ func TestCreate_Success(t *testing.T){
         mock.Anything,
         mock.Anything,
         mock.Anything,
+        mock.Anything,
     ).Return(nil)
 	
 	now := time.Now().Truncate(time.Second)
 	timestamp := models.NewDateTimeStamp(now, now)
-	post := models.NewPost(-1, "Test Title", "Test Description", *timestamp)
+	post := models.NewPost(-1, 1, "Test Title", "Test Description", *timestamp)
 	
 	dao := NewPostDAOImpl(mockDB)
 	err := dao.Create(*post)
@@ -44,7 +45,7 @@ func TestCreate_InvalidID(t *testing.T){
 	dao := NewPostDAOImpl(mockDB)
 
 	invalidID := 1
-	post := models.NewPost(invalidID, "Test Title", "Test Description", models.DateTimeStamp{})
+	post := models.NewPost(invalidID, 1, "Test Title", "Test Description", models.DateTimeStamp{})
 
 	err := dao.Create(*post)
 
@@ -101,6 +102,7 @@ func generateMockPosts(count int, now time.Time) []map[string]interface{} {
 			"id":          i + 1,
 			"title":       fmt.Sprintf("Test Title %d", i), 
 			"description": fmt.Sprintf("Test Description %d", i),
+			"submitted_by": 1,
 			"created_at":  now,
 			"updated_at":  now,
 		}
@@ -142,10 +144,15 @@ func TestGetAll_Success(t *testing.T){
 
 func TestGetAllWithLimit_Success(t *testing.T){
 	var limit int = 10
-
+	var recordSize int = 100
+	
     now := time.Now().Truncate(time.Second)
 
 	mockDB := new(mocks.Database)
+
+	mockDB.On(
+		"GetTableLength",
+		"posts",).Return(recordSize, nil)
 
 	mockDB.On(
 		"PrepareAndFetchAll",
@@ -172,6 +179,40 @@ func TestGetAllWithLimit_Success(t *testing.T){
 }
 
 
+func TestGetAllWithLimit_OverSize(t *testing.T){
+	var recordSize int = 100
+	var limit int = 1e9
+
+    now := time.Now().Truncate(time.Second)
+
+	mockDB := new(mocks.Database)
+
+	mockDB.On(
+		"GetTableLength",
+		"posts",).Return(recordSize, nil)
+
+	mockDB.On(
+		"PrepareAndFetchAll",
+		mock.Anything,
+		recordSize).Return(generateMockPosts(recordSize,now), nil)
+
+	dao := NewPostDAOImpl(mockDB)
+	posts, err := dao.GetAll(limit)
+
+	assert.NoError(t, err)
+	assert.Len(t, posts, recordSize)
+	titleId := 10
+	descriptionId := 50
+	expectedTitle := fmt.Sprintf("Test Title %v", titleId)
+	expecteDescription := fmt.Sprintf("Test Description %v",descriptionId)
+
+	assert.Equal(t, expectedTitle, posts[titleId].GetTitle())
+	assert.Equal(t, expecteDescription,posts[descriptionId].GetDescription())
+
+	mockDB.AssertExpectations(t)
+}
+
+
 func TestGetById_Success(t *testing.T){
 	var id int = 10
 	expectedTitle := fmt.Sprintf("Test Title %v", id)
@@ -184,6 +225,7 @@ func TestGetById_Success(t *testing.T){
 			{
 				"id":          id,
 				"title":       expectedTitle,
+				"submitted_by": 1,
 				"description": "",
 				"created_at":  now,
 				"updated_at":  now,

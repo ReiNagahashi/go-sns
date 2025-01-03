@@ -44,14 +44,15 @@ func (p PostDAOImpl) Delete(id int) error{
 func (p PostDAOImpl) GetAll(limitData ...int) ([]models.Post, error){
 	var limit int
 
-	if len(limitData) > 0 && limitData[0] > 0{
+	recordNums,err := p.db.GetTableLength("posts")
+	if err != nil{
+		return nil, errors.New("action=PostDAOImpl.GetAll msg=Error executing query: " + err.Error())
+	}
+
+	if len(limitData) > 0 && limitData[0] > 0 && limitData[0] <= recordNums{
 		limit = limitData[0]
 	}else{
-		var err error
-		limit, err = p.db.GetTableLength("posts")
-		if err != nil{
-			return nil, errors.New("action=PostDAOImpl.GetAll msg=Error executing query: " + err.Error())
-		}
+		limit = recordNums
 	}
 
 	query := "SELECT * FROM posts LIMIT ?"
