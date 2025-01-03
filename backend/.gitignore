@@ -1,9 +1,6 @@
 # database files
 *.db
 database.sql
-# environmental  variables
-.ini
-config.ini
 # IDE/Editor settings
 .vscode/
 # related to OS
