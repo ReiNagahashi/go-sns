@@ -52,6 +52,32 @@ func (u UserDAOImpl) Create(userData *models.User, password string) error {
 	return nil
 }
 
+
+func (u UserDAOImpl) GetAll(limitData ...int) ([]models.User, error){
+	var limit int
+
+	recordNums,err := u.db.GetTableLength("users")
+	if err != nil{
+		return nil, errors.New("action=UserDAOImpl.GetAll msg=Error executing query: " + err.Error())
+	}
+
+	if len(limitData) > 0 && limitData[0] > 0 && limitData[0] <= recordNums{
+		limit = limitData[0]
+	}else{
+		limit = recordNums
+	}
+
+	query := "SELECT * FROM users LIMIT ?"
+
+	users, err := u.db.PrepareAndFetchAll(query, []interface{}{limit}...)
+	if err != nil {
+		return nil, errors.New("action=UserDAOImpl.GetAll msg=Error executing query: " + err.Error())
+	}
+
+	return u.resultsToUsers(users), nil
+}
+
+
 func (u UserDAOImpl) getRawById(id int) map[string]interface{} {
 	query := "SELECT * FROM users WHERE id=?"
 	result, err := u.db.PrepareAndFetchAll(query, id)
@@ -100,15 +126,15 @@ func (u UserDAOImpl) resultToUser(user map[string]interface{}) models.User {
 		*models.NewDateTimeStamp(user["created_at"].(time.Time), user["updated_at"].(time.Time)))
 }
 
-// func (u UserDAOImpl) resultsToUsers(results []map[string]interface{}) []models.User{
-// 	users := make([]models.User, 0)
+func (u UserDAOImpl) resultsToUsers(results []map[string]interface{}) []models.User{
+	users := make([]models.User, 0)
 
-// 	for _, result := range results{
-// 		users = append(users, u.resultToUser(result))
-// 	}
+	for _, result := range results{
+		users = append(users, u.resultToUser(result))
+	}
 
-// 	return users
-// }
+	return users
+}
 
 func (u UserDAOImpl) ValidateUserField(name, email string, isRegister bool) error {
 

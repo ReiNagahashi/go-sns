@@ -3,6 +3,7 @@ package postImpl
 import (
 	"errors"
 	"fmt"
+	"go-sns/database/dataAccess/interfaces"
 	"go-sns/database/mocks"
 	"go-sns/models"
 	"testing"
@@ -11,8 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-
 
 // カラム内容に関係なく、PrepareAndExecuteがdao.Createによって呼び出されたかどうかをチェックする
 func TestCreate_Success(t *testing.T){
@@ -32,7 +31,7 @@ func TestCreate_Success(t *testing.T){
 	timestamp := models.NewDateTimeStamp(now, now)
 	post := models.NewPost(-1, 1, "Test Title", "Test Description", *timestamp)
 	
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 	err := dao.Create(*post)
 
 	assert.NoError(t, err)
@@ -42,7 +41,7 @@ func TestCreate_Success(t *testing.T){
 
 func TestCreate_InvalidID(t *testing.T){
 	mockDB := new(mocks.Database)
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 
 	invalidID := 1
 	post := models.NewPost(invalidID, 1, "Test Title", "Test Description", models.DateTimeStamp{})
@@ -63,7 +62,7 @@ func TestDelete_Success(t *testing.T){
 		mock.Anything,
 		mock.Anything).
 			Return(nil)
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 
 	id := 1
 	err := dao.Delete(id)
@@ -83,7 +82,7 @@ func TestDelete_QueryExecutionFailure(t *testing.T) {
 		-10).
 			Return(queryError)
 
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 
 	id := -10
 	err := dao.Delete(id)
@@ -125,7 +124,7 @@ func TestGetAll_Success(t *testing.T){
 		mock.Anything,
 		recordSize).Return(generateMockPosts(recordSize, now), nil)
 
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 
 	posts, err := dao.GetAll()
 
@@ -159,7 +158,7 @@ func TestGetAllWithLimit_Success(t *testing.T){
 		mock.Anything,
 		limit).Return(generateMockPosts(limit,now), nil)
 
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 
 	posts, err := dao.GetAll(limit)
 
@@ -196,7 +195,7 @@ func TestGetAllWithLimit_OverSize(t *testing.T){
 		mock.Anything,
 		recordSize).Return(generateMockPosts(recordSize,now), nil)
 
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 	posts, err := dao.GetAll(limit)
 
 	assert.NoError(t, err)
@@ -232,7 +231,7 @@ func TestGetById_Success(t *testing.T){
 			},
 		}, nil)
 
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 
 	post, err := dao.GetById(id)
 
@@ -252,7 +251,7 @@ func TestGetById_NotFound(t *testing.T){
 	mockDB.On("PrepareAndFetchAll", mock.Anything, invalidId).
 		Return([]map[string]interface{}{}, nil)
 	
-	dao := NewPostDAOImpl(mockDB)
+	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 	post, err := dao.GetById(invalidId)
 
 	assert.Error(t, err)

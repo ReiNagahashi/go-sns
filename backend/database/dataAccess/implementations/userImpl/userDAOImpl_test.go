@@ -3,6 +3,7 @@ package userImpl
 import (
 	"errors"
 	"fmt"
+	"go-sns/database/dataAccess/interfaces"
 	"go-sns/database/mocks"
 	"go-sns/models"
 	"testing"
@@ -27,7 +28,8 @@ func TestCreate_Success(t *testing.T) {
 	mockDB.On("GetLastInsertedId").Return(1, nil)
 
 	now := time.Now().Truncate(time.Second)
-	dao := NewUserDAOImpl(mockDB)
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
+
 	timestamp := models.NewDateTimeStamp(now, now)
 	user := models.NewUser(-1, "Test User", "Test Email", *timestamp)
 	password := "Abcd1234!"
@@ -39,7 +41,7 @@ func TestCreate_Success(t *testing.T) {
 
 func TestCreate_InvalidID(t *testing.T) {
 	mockDB := new(mocks.Database)
-	dao := NewUserDAOImpl(mockDB)
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
 
 	invalidID := 1
 	user := models.NewUser(invalidID, "Test User", "Test Email", models.DateTimeStamp{})
@@ -68,7 +70,8 @@ func TestCreate_QueryExecutionFailure(t *testing.T) {
 	).Return(queryError)
 
 	now := time.Now().Truncate(time.Second)
-	dao := NewUserDAOImpl(mockDB)
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
+
 	timestamp := models.NewDateTimeStamp(now, now)
 	user := models.NewUser(-1, "Test User", "Test Email", *timestamp)
 	password := "Abcd1234!"
@@ -99,7 +102,8 @@ func TestCreate_FetchingIdQueryFailure(t *testing.T) {
 	mockDB.On("GetLastInsertedId").Return(-1, fetchingError)
 
 	now := time.Now().Truncate(time.Second)
-	dao := NewUserDAOImpl(mockDB)
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
+
 	timestamp := models.NewDateTimeStamp(now, now)
 	user := models.NewUser(-1, "Test User", "Test Email", *timestamp)
 	password := "Abcd1234!"
@@ -110,6 +114,127 @@ func TestCreate_FetchingIdQueryFailure(t *testing.T) {
 	assert.Equal(t, expectedError, err.Error())
 	mockDB.AssertExpectations(t)
 }
+
+
+
+func generateMockUsers(count int, now time.Time) []map[string]interface{} {
+	mockData := make([]map[string]interface{}, count)
+	for i := 0; i < count; i++ {
+		mockData[i] = map[string]interface{}{
+			"id":          i + 1,
+			"name":       fmt.Sprintf("Test name %d", i), 
+			"email": fmt.Sprintf("Test email %d", i),
+			"password": "#####",
+			"created_at":  now,
+			"updated_at":  now,
+		}
+	}
+	return mockData
+}
+
+func TestGetAll_Success(t *testing.T){
+	var recordSize int = 100
+    now := time.Now().Truncate(time.Second)
+
+	mockDB := new(mocks.Database)
+	mockDB.On(
+		"GetTableLength",
+		"users",).Return(recordSize, nil)
+
+	mockDB.On(
+		"PrepareAndFetchAll",
+		mock.Anything,
+		recordSize).Return(generateMockUsers(recordSize, now), nil)
+
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
+
+
+	users, err := dao.GetAll()
+
+	assert.NoError(t, err)
+	assert.Len(t, users, recordSize)
+	nameId := 10
+	emailId := 50
+	expectedName := fmt.Sprintf("Test name %v", nameId)
+	expecteEmail := fmt.Sprintf("Test email %v",emailId)
+
+	assert.Equal(t, expectedName, users[nameId].GetName())
+	assert.Equal(t, expecteEmail,users[emailId].GetEmail())
+
+	mockDB.AssertExpectations(t)
+}
+
+func TestGetAllWithLimit_Success(t *testing.T){
+	var limit int = 10
+	var recordSize int = 100
+	
+    now := time.Now().Truncate(time.Second)
+
+	mockDB := new(mocks.Database)
+
+	mockDB.On(
+		"GetTableLength",
+		"users",).Return(recordSize, nil)
+
+	mockDB.On(
+		"PrepareAndFetchAll",
+		mock.Anything,
+		limit).Return(generateMockUsers(limit,now), nil)
+
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
+
+	users, err := dao.GetAll(limit)
+
+	assert.NoError(t, err)
+	assert.Len(t, users, limit)
+
+	nameId := 5
+	emailId := 3
+	expectedName := fmt.Sprintf("Test name %v", nameId)
+	expecteEmail := fmt.Sprintf("Test email %v",emailId)
+
+	assert.Equal(t, expectedName, users[nameId].GetName())
+	assert.Equal(t, expecteEmail,users[emailId].GetEmail())
+
+	mockDB.AssertExpectations(t)
+	mockDB.AssertNotCalled(t, "GetTableLength")
+}
+
+
+func TestGetAllWithLimit_OverSize(t *testing.T){
+	var recordSize int = 100
+	var limit int = 1e9
+
+    now := time.Now().Truncate(time.Second)
+
+	mockDB := new(mocks.Database)
+
+	mockDB.On(
+		"GetTableLength",
+		"users",).Return(recordSize, nil)
+
+	mockDB.On(
+		"PrepareAndFetchAll",
+		mock.Anything,
+		recordSize).Return(generateMockUsers(recordSize,now), nil)
+
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
+
+	users, err := dao.GetAll(limit)
+
+	assert.NoError(t, err)
+	assert.Len(t, users, recordSize)
+	nameId := 10
+	emailId := 50
+	expectedName := fmt.Sprintf("Test name %v", nameId)
+	expecteEmail := fmt.Sprintf("Test email %v",emailId)
+
+	assert.Equal(t, expectedName, users[nameId].GetName())
+	assert.Equal(t, expecteEmail,users[emailId].GetEmail())
+
+	mockDB.AssertExpectations(t)
+}
+
 
 func TestGetById_Success(t *testing.T) {
 	var id int = 10
@@ -130,7 +255,7 @@ func TestGetById_Success(t *testing.T) {
 		},
 	}, nil)
 
-	dao := NewUserDAOImpl(mockDB)
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
 
 	user, err := dao.GetById(id)
 
@@ -149,7 +274,7 @@ func TestGetById_NotFound(t *testing.T) {
 	mockDB.On("PrepareAndFetchAll", mock.Anything, invalidId).
 		Return([]map[string]interface{}{}, nil)
 
-	dao := NewUserDAOImpl(mockDB)
+	var dao interfaces.UserDAO = NewUserDAOImpl(mockDB)
 	user, err := dao.GetById(invalidId)
 
 	assert.Error(t, err)
