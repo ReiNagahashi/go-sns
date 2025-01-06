@@ -6,7 +6,6 @@ export const checkSession = async () => {
         const response = await axios.get(`${API_BASE_URL}/auth/isLoggedIn`, {
             withCredentials: true
         });
-
         const isLoggedIn = response.data;
         
         return isLoggedIn;

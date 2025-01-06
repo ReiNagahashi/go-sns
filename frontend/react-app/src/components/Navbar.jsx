@@ -7,17 +7,13 @@ const Navbar = () => {
     const { isLoggedIn, setIsLoggedIn } = useAuth();
     const navigate = useNavigate();
 
-
     useEffect(() => {
         const verifySession = async () => {
             const loggedIn = await checkSession();
             setIsLoggedIn(loggedIn);
-            if(!loggedIn){
-                navigate("/login")
-            }
         };
         verifySession();
-    }, []);
+    }, [isLoggedIn]);
 
     const handleLogout = async() => {
         try{
