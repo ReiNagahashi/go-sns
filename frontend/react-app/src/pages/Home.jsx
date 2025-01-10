@@ -32,6 +32,9 @@ function Home() {
             navigate("/login");
         }else{
             fetchData();
+            const intervalId = setInterval(fetchData, 10000);
+
+            return () => clearInterval(intervalId);
         }
     }, [isSessionChecked, isLoggedIn, navigate]);
 
@@ -48,36 +51,47 @@ function Home() {
             }, { ...users });
 
         } catch (error) {
-            console.error("Error fetching users:", error);
+            console.error("Error fetching users: ", error);
         }
     }
 
+    const sortPostsByUpdatedAt = (posts) => {
+        posts.sort((a,b) => {
+            if(a.updated_at > b.updated_at) return -1;
+            else if(a.updated_at < b.updated_at) return 1;
+
+            return 0;
+        })
+    }
 
     const fetchPosts = async (updatedUsers) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/posts`);
             const postsData = response.data;
 
-            const postDataWithUserID = postsData.map(postData => ({
+            let postDataWithUserID = postsData.map(postData => ({
                 id: postData.id,
                 title: postData.title,
                 description: postData.description,
-                submitted_by: updatedUsers[postData.submitted_by]
+                submitted_by: updatedUsers[postData.submitted_by],
+                created_at: postData.created_at,
+                updated_at: postData.updated_at,
             }));
+
+            sortPostsByUpdatedAt(postDataWithUserID);
             
             setPosts(postDataWithUserID);
         } catch (error) {
-            console.error("Error fetching posts:", error);
+            console.error("Error fetching posts: ", error);
         }
     }
-// TODO: mapでposts配列を展開した時に、submitted_by=idとなるuserの情報を表示する
-// →O(N)でやるためには、usersデータは配列ではなくディクショナリとして持っておき、users[submitted_by]という感じで展開すればいいと思う。
+
     const fetchData = async () => {
         try{
             const updatedUsers = await fetchUsers();
             await fetchPosts(updatedUsers);
         }catch(error){
-            console.log("Error fetching data: ", error);
+            console.error("Error fetching data: ", error);
         }
 
     };
@@ -104,7 +118,6 @@ function Home() {
 
     const handleDelete = async (id) => {
         try {
-            console.log(`${API_BASE_URL}/posts/${id}`);
             await axios.delete(`${API_BASE_URL}/posts/${id}`);
             fetchData();
         } catch (error) {

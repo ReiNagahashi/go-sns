@@ -1,14 +1,17 @@
 package seeds
 
 import (
-	"fmt"
 	"go-sns/database"
 	"log"
+	"sync"
+	"time"
+
 	"github.com/go-faker/faker/v4"
 )
 
-func PostSeed(sqlite *database.SqliteBase){
-	stmt, err := sqlite.DbConnection.Prepare("INSERT INTO posts (title, description, submitted_by) VALUES (?, ?, ?)")
+func PostSeed(sqlite *database.SqliteBase, wg *sync.WaitGroup){
+    defer wg.Done()
+	stmt, err := sqlite.DbConnection.Prepare("INSERT INTO posts (title, description, submitted_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
 	if err != nil{
 		log.Fatal(err)
 	}
@@ -26,12 +29,11 @@ func PostSeed(sqlite *database.SqliteBase){
         if err != nil{
             log.Fatalln(err)
         }
-        
-        _, err = stmt.Exec(title, description, submitted_by[0])
+        now := time.Now()
+        _, err = stmt.Exec(title, description, submitted_by[0], now, now)
         if err != nil{
             log.Fatal(err)
         }
     }
 
-    fmt.Println("Post Seeding Completed")
 }

@@ -6,6 +6,7 @@ import (
 	"go-sns/database"
 	"go-sns/database/seeds"
 	"log"
+	"sync"
 
 	_ "github.com/mattn/go-sqlite3" // SQLiteドライバ
 	"github.com/pressly/goose/v3"
@@ -40,6 +41,9 @@ func RunMigrations(){
 func RunSeedings(){
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
-	seeds.PostSeed(db)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	seeds.PostSeed(db, &wg)
+	wg.Wait()
 	seeds.UserSeed(db)
 }

@@ -1,6 +1,9 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Post struct {
 	id          	int
@@ -14,9 +17,12 @@ type postJSON struct {
 	ID          	int           	`json:"id"`
 	Title       	string        	`json:"title"`
 	Description 	string        	`json:"description"`
-	TimeStamp   	DateTimeStamp 	`json:"timeStamp"`
+	CreatedAt   	time.Time 		`json:"created_at"`
+	UpdatedAt   	time.Time 		`json:"updated_at"`
 	Submitted_by 	int 			`json:"submitted_by"`
 }
+
+
 
 func NewPost(id, submitted_by int, title, description string, timeStamp DateTimeStamp) *Post {
 	return &Post{id, title, description, timeStamp, submitted_by}
@@ -74,7 +80,8 @@ func (p *Post) MarshalJSON() ([]byte, error) {
 		Title:       p.title,
 		Description: p.description,
 		Submitted_by: p.submitted_by,
-		TimeStamp:   p.timeStamp,
+		CreatedAt:   p.timeStamp.GetCreatedAt(),
+		UpdatedAt: p.timeStamp.GetUpdatedAt(),
 	})
 }
 
@@ -87,7 +94,8 @@ func (p *Post) UnmarshalJSON(data []byte) error {
 	p.title = pj.Title
 	p.description = pj.Description
 	p.submitted_by = pj.Submitted_by
-	p.timeStamp = pj.TimeStamp
+	timestamp := NewDateTimeStamp(pj.CreatedAt, pj.UpdatedAt)
+	p.timeStamp = *timestamp
 	
 	return nil
 }
