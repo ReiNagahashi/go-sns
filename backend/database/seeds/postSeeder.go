@@ -1,7 +1,11 @@
 package seeds
 
 import (
+	"fmt"
 	"go-sns/database"
+
+	"go-sns/database/dataAccess/implementations/userImpl"
+	"go-sns/database/dataAccess/interfaces"
 	"log"
 	"sync"
 	"time"
@@ -17,20 +21,38 @@ func PostSeed(sqlite *database.SqliteBase, wg *sync.WaitGroup){
 	}
 	defer stmt.Close()
 
-    numRecords := 10
-    table_len, err := sqlite.GetTableLength("posts")
+    var dao interfaces.UserDAO = userImpl.NewUserDAOImpl(sqlite)
+    fmt.Printf("%v", dao)
+
+    users, err := dao.GetAll()
     if err != nil{
         log.Fatalln(err)
     }
+
+    if len(users) == 0{
+        return
+    }
+
+    user_ids := make([]int, len(users))
+    for i := range user_ids{
+        user_ids[i] = users[i].GetId()
+    }
+
+    numRecords := 5
+
     for i := 0; i < numRecords; i++{
         title := faker.Paragraph()
         description := faker.Paragraph()
-        submitted_by, err := faker.RandomInt(table_len)
+        randomInt, err := faker.RandomInt(0, len(users)-1)
+        if err != nil{
+            log.Fatalln(err)
+        }
+        submitted_by := user_ids[randomInt[0]]
         if err != nil{
             log.Fatalln(err)
         }
         now := time.Now()
-        _, err = stmt.Exec(title, description, submitted_by[0], now, now)
+        _, err = stmt.Exec(title, description, submitted_by, now, now)
         if err != nil{
             log.Fatal(err)
         }

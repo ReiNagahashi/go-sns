@@ -3,10 +3,7 @@ package utils
 import (
 	"database/sql"
 	"go-sns/config"
-	"go-sns/database"
-	"go-sns/database/seeds"
 	"log"
-	"sync"
 
 	_ "github.com/mattn/go-sqlite3" // SQLiteドライバ
 	"github.com/pressly/goose/v3"
@@ -38,12 +35,3 @@ func RunMigrations(){
 
 }
 
-func RunSeedings(){
-	db := database.NewSqliteBase()
-	defer db.DbConnection.Close()
-	var wg sync.WaitGroup
-	wg.Add(1)
-	seeds.PostSeed(db, &wg)
-	wg.Wait()
-	seeds.UserSeed(db)
-}

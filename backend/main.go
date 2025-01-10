@@ -15,15 +15,15 @@ import (
 func main(){
 	utils.LoggingSettings(config.Config.LogFile)
 	utils.RunMigrations()
-
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 	var wg sync.WaitGroup
+	seeds.UserSeed(db)
 
 	go func(){
 		for{
 			wg.Add(1)
-			time.Sleep(60 * time.Second)
+			time.Sleep(30 * time.Second)
 			go seeds.PostSeed(db, &wg)
 			wg.Wait()
 			fmt.Println("Post Seeding Completed")
