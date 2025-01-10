@@ -19,21 +19,14 @@ services:
       - ./backend:/app
     ports:
       - "8080:8080"
-    depends_on:
-      - db
     healthcheck:
-      test: ["CMD", "sqlite3", "/app/database/database.sql", "SELECT 1;"]
-      interval: 100s
-      timeout: 100s
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 15s
       retries: 3
-      start_period: 3s
+      start_period: 5s
     networks:
       - go-sns-network
-
-  db:
-    image: nouchka/sqlite3
-    volumes:
-      - ./backend/database/database.sql:/app/database/database.sql
 
 networks:
   go-sns-network:

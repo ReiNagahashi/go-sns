@@ -294,6 +294,11 @@ func StartWebServer() error {
 		AllowCredentials: true,
 	}).Handler(r)
 
+	// Health check
+	r.HandleFunc("/health", func (w http.ResponseWriter, r *http.Request){
+		w.WriteHeader(http.StatusOK)
+	})
+
 	// Post
 	r.HandleFunc("/api/posts", postHandler).Methods("GET")                      //全てのポストデータをデータベースから持ってきて表示する。クエリパラメータとしてidが渡されていれば、そのidのデータのみを表示する
 	r.HandleFunc("/api/posts", createPostHandler).Methods("POST")               //フォームにタイトル・内容を入力して送信する際に実行されるエンドポイント
