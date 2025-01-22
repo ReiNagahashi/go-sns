@@ -84,6 +84,14 @@ func (p PostDAOImpl) Delete(id int) error{
 	return nil
 }
 
+func (p PostDAOImpl) DeleteFavorite(userId, postId int) error{
+	if err := p.db.PrepareAndExecute("DELETE FROM users_posts WHERE user_id = ? AND post_id = ?", userId, postId); err != nil{
+		return errors.New("action=PostDAOImpl.DeleteFavorite msg=Error executing query: " + err.Error())
+	}
+
+	return nil
+}
+
 func (p PostDAOImpl) GetAll(limitData ...int) ([]models.Post, error){
 	var limit int
 
@@ -128,17 +136,21 @@ func (p PostDAOImpl)initPostFavorite(posts []models.Post) error{
 		return err
 	}
 	var userdao interfaces.UserDAO = userImpl.NewUserDAOImpl(p.db)
-
 	for _, favoriteRecord := range favoritesRecords{
-		user, err := userdao.GetById(int(favoriteRecord["user_id"].(int64)))
+		favoriteUserId := int(favoriteRecord["user_id"].(int64))
+		favoritePostId := int(favoriteRecord["post_id"].(int64))
+
+		user, err := userdao.GetById(favoriteUserId)
 		if err != nil{
-			fmt.Println("Invalid user: This record is skipped.")
+			fmt.Printf("Invalid user id:%v This record was deleted.", favoriteUserId)
+			p.DeleteFavorite(favoriteUserId, favoritePostId)
 			continue
 		}
 
-		postIndex, ok := postIds[int(favoriteRecord["post_id"].(int64))]
+		postIndex, ok := postIds[favoritePostId]
 		if !ok{
-			fmt.Println("Invalid post: This record is skipped.")
+			fmt.Printf("Invalid post id:%v This record was deleted.", favoritePostId)
+			p.DeleteFavorite(favoriteUserId, favoritePostId)
 			continue
 		}
 
