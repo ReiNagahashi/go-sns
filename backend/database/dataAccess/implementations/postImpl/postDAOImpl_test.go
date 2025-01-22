@@ -29,7 +29,7 @@ func TestCreate_Success(t *testing.T){
 	
 	now := time.Now().Truncate(time.Second)
 	timestamp := models.NewDateTimeStamp(now, now)
-	post := models.NewPost(-1, 1, "Test Title", "Test Description", *timestamp)
+	post := models.NewPost(-1, 1, "Test Title", "Test Description", *timestamp, []models.User{})
 	
 	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 	err := dao.Create(*post)
@@ -44,7 +44,7 @@ func TestCreate_InvalidID(t *testing.T){
 	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 
 	invalidID := 1
-	post := models.NewPost(invalidID, 1, "Test Title", "Test Description", models.DateTimeStamp{})
+	post := models.NewPost(invalidID, 1, "Test Title", "Test Description", models.DateTimeStamp{}, []models.User{})
 
 	err := dao.Create(*post)
 

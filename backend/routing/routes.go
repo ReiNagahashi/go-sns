@@ -35,6 +35,39 @@ func APIError(w http.ResponseWriter, errMessage string, code int) {
 	w.Write(jsonError)
 }
 
+func addFavoritePostHandler(w http.ResponseWriter, r *http.Request){
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+
+	var postDao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
+
+	vars := mux.Vars(r)
+	strId := vars["id"]
+	if strId == "" {
+		APIError(w, "ID is required to add a favorite", http.StatusBadRequest)
+		return
+	}
+
+	postId, err := strconv.Atoi(strId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// ログインしているユーザーを取得
+	authUser := Authenticator.GetAuthenticatedUser(r)
+	if authUser == nil{
+		APIError(w, "User is invalid", http.StatusBadRequest)
+		return
+	}
+
+	err = postDao.AddFavorite(authUser.GetId(), postId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	var id int
 	strId := r.URL.Query().Get("id")
@@ -104,7 +137,7 @@ func createPostHandler(w http.ResponseWriter, r *http.Request) {
 	timeStamp := time.Now()
 	authUser := Authenticator.GetAuthenticatedUser(r)
 
-	newPost := models.NewPost(-1, authUser.GetId(), r.FormValue("title"), r.FormValue("description"), *models.NewDateTimeStamp(timeStamp, timeStamp))
+	newPost := models.NewPost(-1, authUser.GetId(), r.FormValue("title"), r.FormValue("description"), *models.NewDateTimeStamp(timeStamp, timeStamp), []models.User{})
 
 	if err := dao.ValidatePostField(*newPost); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -127,7 +160,7 @@ func deletePostHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	strId := vars["id"]
 	if strId == "" {
-		APIError(w, "ID is required for retrieve a user", http.StatusBadRequest)
+		APIError(w, "ID is required to delete a post", http.StatusBadRequest)
 		return
 	}
 
@@ -302,7 +335,9 @@ func StartWebServer() error {
 	// Post
 	r.HandleFunc("/api/posts", postHandler).Methods("GET")                      //全てのポストデータをデータベースから持ってきて表示する。クエリパラメータとしてidが渡されていれば、そのidのデータのみを表示する
 	r.HandleFunc("/api/posts", createPostHandler).Methods("POST")               //フォームにタイトル・内容を入力して送信する際に実行されるエンドポイント
+	r.HandleFunc("/api/posts/{id:[0-9]+}", addFavoritePostHandler).Methods("POST") //各ポストデータに付いているハートアイコンボタンを押したら実行される
 	r.HandleFunc("/api/posts/{id:[0-9]+}", deletePostHandler).Methods("DELETE") //各ポストデータに付いている削除ボタンを押したら実行される
+
 
 	// User
 	r.HandleFunc("/api/users", userHandler).Methods("GET")

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"go-sns/database"
+	"go-sns/database/dataAccess/implementations/userImpl"
+	"go-sns/database/dataAccess/interfaces"
 	"go-sns/models"
 	"time"
 )
@@ -16,6 +18,47 @@ type PostDAOImpl struct{
 
 func NewPostDAOImpl(db database.Database) *PostDAOImpl{
 	return &PostDAOImpl{db: db}
+}
+
+
+func (p PostDAOImpl) AddFavorite(userId, postId int) error{
+	posts, err := p.GetAll()
+    if err != nil{
+		return errors.New("action=PostDAOImpl.AddFavorite msg=Error executing query: " + err.Error())
+    }
+
+    // nこのポストはそれぞれposts_id[i~N]のidを持つ
+    postMap := make(map[int]bool)
+    for _, post := range posts{
+        postMap[post.GetId()] = true
+    }
+
+    var userDao interfaces.UserDAO = userImpl.NewUserDAOImpl(p.db)
+    // 現在のユーザー全てを取ってくる→m個
+    users, err := userDao.GetAll()
+	if err != nil{
+		return errors.New("action=PostDAOImpl.AddFavorite msg=Error executing query: " + err.Error())
+    }
+    // mこのユーザーはそれぞれusers_id[j~M]のidを持つ
+    userMap := make(map[int]bool)
+    for _, user := range users{
+        userMap[user.GetId()] = true
+    }
+
+	_, postIsExisted := postMap[postId]
+	_, userIsExisted := userMap[userId]
+
+	if !postIsExisted || !userIsExisted{
+		return errors.New("action=PostDAOImpl.AddFavorite msg=post_id or user_id is invalid")
+	}
+
+	query := "INSERT INTO users_posts (user_id, post_id) VALUES(?,?)"
+
+	if err := p.db.PrepareAndExecute(query, userId, postId); err != nil{
+		return errors.New("action=PostDAOImpl.AddFavorite msg=Error executing query: " + err.Error())
+	}
+
+	return nil
 }
 
 func (p PostDAOImpl) Create(postData models.Post) error{
@@ -46,7 +89,7 @@ func (p PostDAOImpl) GetAll(limitData ...int) ([]models.Post, error){
 
 	recordNums,err := p.db.GetTableLength("posts")
 	if err != nil{
-		return nil, errors.New("action=PostDAOImpl.GetAll msg=Error executing query: " + err.Error())
+		return nil, errors.New("action=PostDAOImpl.GetTableLength msg=Error executing query: " + err.Error())
 	}
 
 	if len(limitData) > 0 && limitData[0] > 0 && limitData[0] <= recordNums{
@@ -57,12 +100,64 @@ func (p PostDAOImpl) GetAll(limitData ...int) ([]models.Post, error){
 
 	query := "SELECT * FROM posts LIMIT ?"
 
-	posts, err := p.db.PrepareAndFetchAll(query, []interface{}{limit}...)
+	postsRecords, err := p.db.PrepareAndFetchAll(query, []interface{}{limit}...)
 	if err != nil {
-		return nil, errors.New("action=PostDAOImpl.GetAll msg=Error executing query: " + err.Error())
+		return nil, errors.New("action=PostDAOImpl.PrepareAndFetchAll msg=Error executing query: " + err.Error())
 	}
 
-	return p.resultsToPosts(posts), nil
+	posts := p.resultsToPosts(postsRecords)
+	
+	// users_postsテーブルを読み込んで、それからpost_idを持つposts[i]のfavoriteUsersにuser_idであるuserオブジェクトを格納する
+	err = p.initPostFavorite(posts)
+	if err != nil{
+		return nil, errors.New("action=PostDAOImpl.initPostFavorite msg=Error executing query: " + err.Error())
+	}
+
+	return posts, nil
+
+}
+
+func (p PostDAOImpl)initPostFavorite(posts []models.Post) error{
+	postIds := make(map[int]int)
+	for i := 0; i < len(posts); i++{
+		postIds[posts[i].GetId()] = i
+	}
+
+	favoritesRecords, err := p.getAllFavorites()
+	if err != nil{
+		return err
+	}
+	var userdao interfaces.UserDAO = userImpl.NewUserDAOImpl(p.db)
+
+	for _, favoriteRecord := range favoritesRecords{
+		user, err := userdao.GetById(int(favoriteRecord["user_id"].(int64)))
+		if err != nil{
+			fmt.Println("Invalid user: This record is skipped.")
+			continue
+		}
+
+		postIndex, ok := postIds[int(favoriteRecord["post_id"].(int64))]
+		if !ok{
+			fmt.Println("Invalid post: This record is skipped.")
+			continue
+		}
+
+		favoriteUsers := posts[postIndex].GetFavoriteUsers()
+		favoriteUsers = append(favoriteUsers, *user)
+		posts[postIndex].SetFavoriteUsers(favoriteUsers)
+	}
+
+	return nil
+}
+
+func (p PostDAOImpl) getAllFavorites()([]map[string]interface{}, error){
+	// users_postsからレコードを全て取得
+	query := "SELECT * FROM users_posts"
+	favofavoritesRecords, err := p.db.PrepareAndFetchAll(query)
+	if err != nil{
+		return nil, errors.New("action=PostDAOImpl.getAllFavorites msg=Error executing query: " + err.Error())
+	}
+	return favofavoritesRecords, nil
 }
 
 
@@ -88,7 +183,8 @@ func (p PostDAOImpl) resultToPost(post map[string]interface{}) models.Post{
 		int(post["submitted_by"].(int64)),
 		post["title"].(string),
 		post["description"].(string),
-		*models.NewDateTimeStamp(post["created_at"].(time.Time), post["updated_at"].(time.Time)))
+		*models.NewDateTimeStamp(post["created_at"].(time.Time), post["updated_at"].(time.Time)),
+		[]models.User{})
 }
 
 

@@ -15,14 +15,14 @@ type SqliteBase struct{
 
 func NewSqliteBase() *SqliteBase{
 	var err error
-	SqliteBase := &SqliteBase{}
+	sqliteBase := &SqliteBase{}
 
-	SqliteBase.DbConnection, err = sql.Open(config.Config.SQLDriver, config.Config.DbPath)
+	sqliteBase.DbConnection, err = sql.Open(config.Config.SQLDriver, config.Config.DbPath)
 	if err != nil{
 		log.Fatalln(err)
 	}
 
-	return SqliteBase
+	return sqliteBase
 }
 
 func (s *SqliteBase) PrepareAndFetchAll(query string, args ...interface{}) ([]map[string]interface{}, error){

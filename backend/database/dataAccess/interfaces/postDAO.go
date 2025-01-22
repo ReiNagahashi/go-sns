@@ -3,6 +3,7 @@ package interfaces
 import "go-sns/models"
 
 type PostDAO interface{
+	AddFavorite(userId, postId int) error
 	Create(postData models.Post) error
 	Delete(id int) error
 	GetAll(...int) ([]models.Post, error)

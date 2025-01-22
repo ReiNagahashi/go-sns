@@ -11,6 +11,7 @@ type Post struct {
 	description 	string
 	timeStamp   	DateTimeStamp
 	submitted_by 	int
+	favorites 		[]User
 }
 
 type postJSON struct {
@@ -20,12 +21,13 @@ type postJSON struct {
 	CreatedAt   	time.Time 		`json:"created_at"`
 	UpdatedAt   	time.Time 		`json:"updated_at"`
 	Submitted_by 	int 			`json:"submitted_by"`
+	Favorites 		[]User 			`json:"favorites"`
 }
 
 
 
-func NewPost(id, submitted_by int, title, description string, timeStamp DateTimeStamp) *Post {
-	return &Post{id, title, description, timeStamp, submitted_by}
+func NewPost(id, submitted_by int, title, description string, timeStamp DateTimeStamp, favorites []User) *Post {
+	return &Post{id, title, description, timeStamp, submitted_by, favorites}
 }
 
 func (p Post) GetId() int {
@@ -69,6 +71,13 @@ func (p *Post) SetSubmitted_by(submitted_by int){
 	p.submitted_by = submitted_by
 }
 
+func (p *Post) GetFavoriteUsers() []User{
+	return p.favorites
+}
+
+func (p *Post) SetFavoriteUsers(usersList []User) {
+	p.favorites = usersList
+}
 
 func (p *Post) GetFields() []interface{} {
 	return []interface{}{p.title, p.description, p.submitted_by, p.timeStamp.GetCreatedAt(), p.timeStamp.GetUpdatedAt()}
@@ -80,6 +89,7 @@ func (p *Post) MarshalJSON() ([]byte, error) {
 		Title:       p.title,
 		Description: p.description,
 		Submitted_by: p.submitted_by,
+		Favorites: p.favorites,
 		CreatedAt:   p.timeStamp.GetCreatedAt(),
 		UpdatedAt: p.timeStamp.GetUpdatedAt(),
 	})
@@ -96,6 +106,7 @@ func (p *Post) UnmarshalJSON(data []byte) error {
 	p.submitted_by = pj.Submitted_by
 	timestamp := NewDateTimeStamp(pj.CreatedAt, pj.UpdatedAt)
 	p.timeStamp = *timestamp
+	p.favorites = pj.Favorites
 	
 	return nil
 }
