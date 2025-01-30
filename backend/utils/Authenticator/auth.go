@@ -2,7 +2,6 @@ package Authenticator
 
 import (
 	"errors"
-	"fmt"
 	"go-sns/config"
 	"go-sns/database"
 	"go-sns/database/dataAccess/implementations/userImpl"
@@ -62,6 +61,7 @@ func LoginAsUser(user *models.User, w http.ResponseWriter, r *http.Request) erro
 	return nil
 }
 
+
 func Logout(w http.ResponseWriter, r *http.Request) error {
 	session, err := config.Store.Get(r, sessionName)
 	if err != nil {
@@ -74,13 +74,12 @@ func Logout(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func GetAuthenticatedUser(r *http.Request) *models.User {
+func GetAuthenticatedUser(r *http.Request) (*models.User, error) {
 	if err := RetrieveAuthenticatedUser(r); err != nil {
-		fmt.Printf("action=RetrieveAuthenticatedUser, Content= %v", err)
-		return nil
+		return nil, errors.New("action=RetrieveAuthenticatedUser, Content=" + err.Error())
 	}
 
-	return authenticatedUser
+	return authenticatedUser, nil
 }
 
 func RetrieveAuthenticatedUser(r *http.Request) error {

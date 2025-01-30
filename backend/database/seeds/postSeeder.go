@@ -3,8 +3,6 @@ package seeds
 import (
 	"fmt"
 	"go-sns/database"
-	"go-sns/models"
-
 	"go-sns/database/dataAccess/implementations/postImpl"
 	"go-sns/database/dataAccess/implementations/userImpl"
 	"go-sns/database/dataAccess/interfaces"
@@ -17,16 +15,16 @@ import (
 
 func PostSeed(sqlite *database.SqliteBase, wg *sync.WaitGroup) {
 	defer wg.Done()
-	stmt, err := sqlite.DbConnection.Prepare("INSERT INTO posts (title, description, submitted_by, favorites, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)")
+	stmt, err := sqlite.DbConnection.Prepare("INSERT INTO posts (title, description, submitted_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	var dao interfaces.UserDAO = userImpl.NewUserDAOImpl(sqlite)
-	fmt.Printf("%v", dao)
+	var userDao interfaces.UserDAO = userImpl.NewUserDAOImpl(sqlite)
+	fmt.Printf("%v", userDao)
 
-	users, err := dao.GetAll()
+	users, err := userDao.GetAll()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -50,25 +48,10 @@ func PostSeed(sqlite *database.SqliteBase, wg *sync.WaitGroup) {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		submitted_by := user_ids[randomIntSubmitted_by[0]]
-
-		// TODO: ファボは既存のポストデータのみにできる。なので、このシードメソッドとは別のファボようのシードメソッドを実装する必要がある
-		randomInt, err := faker.RandomInt(0, len(users)-1)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		randomIntsFavorites, err := faker.RandomInt(0, len(users)-1, randomInt[0])
-		if err != nil {
-			log.Fatalln(err)
-		}
-		// users_postsテーブルから、
-		randomUsers := make([]models.User, randomInt[0])
-		for i := range randomIntsFavorites {
-			randomUsers[i] = users[randomIntsFavorites[i]]
-		}
+		submitted_by := user_ids[randomIntSubmitted_by[0]]		
 
 		now := time.Now()
-		_, err = stmt.Exec(title, description, submitted_by, randomUsers, now, now)
+		_, err = stmt.Exec(title, description, submitted_by, now, now)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -76,7 +59,8 @@ func PostSeed(sqlite *database.SqliteBase, wg *sync.WaitGroup) {
 
 }
 
-func PostFavoriteSeed(sqlite database.Database) {
+func PostFavoriteSeed(sqlite database.Database, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// シードするいいねの数
 	favoriteCnt := 10
 

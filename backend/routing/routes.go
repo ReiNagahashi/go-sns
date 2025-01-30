@@ -55,10 +55,9 @@ func addFavoritePostHandler(w http.ResponseWriter, r *http.Request){
 	}
 
 	// ログインしているユーザーを取得
-	authUser := Authenticator.GetAuthenticatedUser(r)
-	if authUser == nil{
-		APIError(w, "User is invalid", http.StatusBadRequest)
-		return
+	authUser, err := Authenticator.GetAuthenticatedUser(r)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	err = postDao.AddFavorite(authUser.GetId(), postId)
@@ -87,7 +86,11 @@ func deleteFavoriteHandler(w http.ResponseWriter, r *http.Request){
 	}
 
 	// ログインしているユーザーを取得
-	authUser := Authenticator.GetAuthenticatedUser(r)
+	authUser, err := Authenticator.GetAuthenticatedUser(r)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	
 	if authUser == nil{
 		APIError(w, "User is invalid", http.StatusBadRequest)
 		return
@@ -168,7 +171,10 @@ func createPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
 	timeStamp := time.Now()
-	authUser := Authenticator.GetAuthenticatedUser(r)
+	authUser, err := Authenticator.GetAuthenticatedUser(r)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 	newPost := models.NewPost(-1, authUser.GetId(), r.FormValue("title"), r.FormValue("description"), *models.NewDateTimeStamp(timeStamp, timeStamp), []models.User{})
 
@@ -176,7 +182,7 @@ func createPostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err := dao.Create(*newPost)
+	err = dao.Create(*newPost)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -326,14 +332,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func isLoggedInHandler(w http.ResponseWriter, r *http.Request) {
-	isLoggedIn, err := Authenticator.IsLoggedIn(r)
+func getLoggedinUserHandler(w http.ResponseWriter, r *http.Request) {
+	loggedinUser, err := Authenticator.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	js, err := json.Marshal(&isLoggedIn)
+	js, err := json.Marshal(loggedinUser)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -379,7 +385,7 @@ func StartWebServer() error {
 	r.HandleFunc("/api/users/register", registerHandler).Methods("POST")
 	// Auth
 	r.HandleFunc("/api/auth/login", loginHandler).Methods("POST")
-	r.HandleFunc("/api/auth/isLoggedIn", isLoggedInHandler).Methods("GET")
+	r.HandleFunc("/api/auth/loggedInUser", getLoggedinUserHandler).Methods("GET")
 	r.HandleFunc("/api/auth/logout", logoutHandler).Methods("POST")
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), corsHandler)
