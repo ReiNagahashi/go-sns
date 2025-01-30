@@ -1,24 +1,24 @@
 import React, { useEffect } from "react";
 import {Link, useNavigate } from "react-router-dom";
-import { checkSession, logoutUser } from "../utils/api";
+import { fetchLoggedinUser, logoutUser } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
-    const { isLoggedIn, setIsLoggedIn } = useAuth();
+    const { loggedInUser, setLoggedInUser } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
         const verifySession = async () => {
-            const loggedIn = await checkSession();
-            setIsLoggedIn(loggedIn);
+            const user = await fetchLoggedinUser();
+            setLoggedInUser(user);
         };
         verifySession();
-    }, [isLoggedIn]);
+    }, []);
 
     const handleLogout = async() => {
         try{
             await logoutUser();
-            setIsLoggedIn(false);
+            setLoggedInUser(null);
             navigate("/login");
         }catch(error){
             console.error("Logout failed: ", error);
@@ -28,7 +28,7 @@ const Navbar = () => {
     return(
         <nav className="navbar">
             <ul className="navbar-list">
-                {isLoggedIn ? (
+                {loggedInUser != null ? (
                     <>
                         <li>
                             <Link to="/">Home</Link>

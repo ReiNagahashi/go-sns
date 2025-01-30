@@ -4,6 +4,7 @@ import "../css/LoginRegister.css";
 import API_BASE_URL from '../config';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { fetchLoggedinUser } from '../utils/api';
 
 function Login() {
     const [formValue, setFormValue] = useState({
@@ -11,7 +12,7 @@ function Login() {
         password: '',
     });
 
-    const {setIsLoggedIn} = useAuth();
+    const {setLoggedInUser} = useAuth();
 
     const navigate = useNavigate();
 
@@ -31,7 +32,8 @@ function Login() {
             formData.append("password", formValue.password)
 
             await axios.post(`${API_BASE_URL}/auth/login`, formData, { withCredentials: true });
-            setIsLoggedIn(true);
+            const user = await fetchLoggedinUser();
+            setLoggedInUser(user);
             navigate("/");
         } catch (error) {
             console.error("Error login:", error);

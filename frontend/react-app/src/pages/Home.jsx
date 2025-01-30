@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "../css/Home.css";
+import { FaHeart,FaRegHeart } from "react-icons/fa";
 import API_BASE_URL from "../config";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { checkSession } from "../utils/api";
+import { fetchLoggedinUser } from "../utils/api";
 
 function Home() {
     const navigate = useNavigate();
-    const { isLoggedIn, setIsLoggedIn } = useAuth();
+    const { loggedInUser, setLoggedInUser } = useAuth();
     const [isSessionChecked, setIsSessionChecked] = useState(false);
     const [users, setUsers] = useState({});
     const [posts, setPosts] = useState([]);
@@ -16,19 +17,15 @@ function Home() {
 
     useEffect(() => {
         const verifySession = async () => {
-            const loggedIn = await checkSession();
-
-            setIsLoggedIn(loggedIn);
-            setIsSessionChecked(true);
+            const user = await fetchLoggedinUser();
+            setLoggedInUser(user);
         };
-
         verifySession();
-    }, [isLoggedIn]);
+        setIsSessionChecked(true);
+    }, []);
 
     useEffect(() => {
-        if (!isSessionChecked) return;
-
-        if (!isLoggedIn){
+        if (loggedInUser == null){
             navigate("/login");
         }else{
             fetchData();
@@ -36,7 +33,7 @@ function Home() {
 
             return () => clearInterval(intervalId);
         }
-    }, [isSessionChecked, isLoggedIn, navigate]);
+    }, [isSessionChecked, navigate]);
 
 
     const fetchUsers = async() => {
@@ -73,6 +70,7 @@ function Home() {
                 id: postData.id,
                 title: postData.title,
                 description: postData.description,
+                favorites: postData.favorites,
                 submitted_by: updatedUsers[postData.submitted_by],
                 created_at: postData.created_at,
                 updated_at: postData.updated_at,
@@ -163,6 +161,10 @@ function Home() {
                             {post.submitted_by?.name || "Anonymous"}
                         </a>
                         <p>{post.description}</p>
+                        <span>
+                            <a href="#"><FaRegHeart /></a>
+                            <a href="#">{post.favorites.length}</a>
+                        </span>
                         <button onClick={() => handleDelete(post.id)} className="deleteBtn">Delete</button>
                     </li>
                 ))}
