@@ -7,7 +7,8 @@ type PostDAO interface{
 	Create(postData models.Post) error
 	Delete(id int) error
 	DeleteFavorite(userId, postId int) error
-	GetAll(...int) ([]models.Post, error)
+	GetAll() ([]models.Post, error)
 	GetById(id int) (*models.Post, error)
+	GetPosts(limit int)([]models.Post, error)
 	ValidatePostField(postData models.Post) error
 }

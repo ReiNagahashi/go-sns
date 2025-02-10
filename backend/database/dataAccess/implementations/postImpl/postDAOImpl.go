@@ -92,40 +92,31 @@ func (p PostDAOImpl) DeleteFavorite(userId, postId int) error{
 	return nil
 }
 
-func (p PostDAOImpl) GetAll(limitData ...int) ([]models.Post, error){
-	var limit int
+func (p PostDAOImpl) GetAll() ([]models.Post, error){
+	query := "SELECT * FROM posts"
 
-	recordNums,err := p.db.GetTableLength("posts")
-	if err != nil{
-		return nil, errors.New("action=PostDAOImpl.GetTableLength msg=Error executing query: " + err.Error())
-	}
-
-	if len(limitData) > 0 && limitData[0] > 0 && limitData[0] <= recordNums{
-		limit = limitData[0]
-	}else{
-		limit = recordNums
-	}
-
-	query := "SELECT * FROM posts LIMIT ?"
-
-	postsRecords, err := p.db.PrepareAndFetchAll(query, []interface{}{limit}...)
+	postsRecords, err := p.db.PrepareAndFetchAll(query)
 	if err != nil {
 		return nil, errors.New("action=PostDAOImpl.PrepareAndFetchAll msg=Error executing query: " + err.Error())
 	}
 
 	posts := p.resultsToPosts(postsRecords)
-	
-	// users_postsテーブルを読み込んで、それからpost_idを持つposts[i]のfavoriteUsersにuser_idであるuserオブジェクトを格納する
-	err = p.initPostFavorite(posts)
+
+	if err := p.updateFavoriteTable(); err != nil{
+		return nil, errors.New("action=PostDAOImpl.updateFavoriteTable msg=Error executing query: " + err.Error())
+	}
+
+	err = p.initFavorite(posts)
 	if err != nil{
 		return nil, errors.New("action=PostDAOImpl.initPostFavorite msg=Error executing query: " + err.Error())
 	}
 
 	return posts, nil
-
 }
 
-func (p PostDAOImpl)initPostFavorite(posts []models.Post) error{
+// getAll,getPosts→updatePostFavoritesとやって消えた投稿idを持っているデータを削除するメソッドを実行→initFavorite
+// 更新方法は、全ての投稿、全てのユーザーデータをメソッド内で呼び出して、それらがfavoritesRecordsを展開した値を持っていない場合は、そのfavoriteRecordは不適切なので、削除処理をする
+func (p PostDAOImpl)initFavorite(posts []models.Post) error{
 	postIds := make(map[int]int)
 	for i := 0; i < len(posts); i++{
 		postIds[posts[i].GetId()] = i
@@ -136,23 +127,16 @@ func (p PostDAOImpl)initPostFavorite(posts []models.Post) error{
 		return err
 	}
 	var userdao interfaces.UserDAO = userImpl.NewUserDAOImpl(p.db)
+	
 	for _, favoriteRecord := range favoritesRecords{
 		favoriteUserId := int(favoriteRecord["user_id"].(int64))
 		favoritePostId := int(favoriteRecord["post_id"].(int64))
 
 		user, err := userdao.GetById(favoriteUserId)
 		if err != nil{
-			fmt.Printf("Invalid user id:%v This record was deleted.", favoriteUserId)
-			p.DeleteFavorite(favoriteUserId, favoritePostId)
-			continue
+			return errors.New("action=PostDAOImpl.GeyById msg=Error executing query: " + err.Error())
 		}
-
-		postIndex, ok := postIds[favoritePostId]
-		if !ok{
-			fmt.Printf("Invalid post id:%v This record was deleted.", favoritePostId)
-			p.DeleteFavorite(favoriteUserId, favoritePostId)
-			continue
-		}
+		postIndex := postIds[favoritePostId]
 
 		favoriteUsers := posts[postIndex].GetFavoriteUsers()
 		favoriteUsers = append(favoriteUsers, *user)
@@ -189,6 +173,38 @@ func (p PostDAOImpl) GetById(id int) (*models.Post, error){
 }
 
 
+func (p PostDAOImpl) GetPosts(limit int)([]models.Post, error){
+	recordNums,err := p.db.GetTableLength("posts")
+	if err != nil{
+		return nil, errors.New("action=PostDAOImpl.GetTableLength msg=Error executing query: " + err.Error())
+	}
+
+	if limit < 0 || limit > recordNums{
+		limit = recordNums
+	}
+
+	query := "SELECT * FROM posts LIMIT ?"
+
+	postsRecords, err := p.db.PrepareAndFetchAll(query, []interface{}{limit}...)
+	if err != nil {
+		return nil, errors.New("action=PostDAOImpl.PrepareAndFetchAll msg=Error executing query: " + err.Error())
+	}
+
+	posts := p.resultsToPosts(postsRecords)
+
+	if err := p.updateFavoriteTable(); err != nil{
+		return nil, errors.New("action=PostDAOImpl.updateFavoriteTable msg=Error executing query: " + err.Error())
+	}
+	
+	err = p.initFavorite(posts)
+	if err != nil{
+		return nil, errors.New("action=PostDAOImpl.initPostFavorite msg=Error executing query: " + err.Error())
+	}
+
+	return posts, nil
+}
+
+
 func (p PostDAOImpl) resultToPost(post map[string]interface{}) models.Post{
 	return *models.NewPost(
 		int(post["id"].(int64)),
@@ -208,6 +224,36 @@ func (p PostDAOImpl) resultsToPosts(results []map[string]interface{}) []models.P
 	}
 
 	return posts
+}
+
+
+func (p PostDAOImpl) updateFavoriteTable()error{
+	favoritesRecords, err := p.getAllFavorites()
+	if err != nil{
+		return err
+	}
+	var userdao interfaces.UserDAO = userImpl.NewUserDAOImpl(p.db)
+	
+	for _, favoriteRecord := range favoritesRecords{
+		favoriteUserId := int(favoriteRecord["user_id"].(int64))
+		favoritePostId := int(favoriteRecord["post_id"].(int64))
+
+		_, err := userdao.GetById(favoriteUserId)
+		if err != nil{
+			fmt.Printf("Invalid user id:%v This record was deleted.", favoriteUserId)
+			p.DeleteFavorite(favoriteUserId, favoritePostId)
+			continue
+		}
+
+		_, err = p.GetById(favoritePostId)
+		if err != nil{
+			fmt.Printf("Invalid post id:%v This record was deleted.", favoritePostId)
+			p.DeleteFavorite(favoriteUserId, favoritePostId)
+			continue
+		}
+	}
+
+	return nil
 }
 
 

@@ -105,8 +105,10 @@ func deleteFavoriteHandler(w http.ResponseWriter, r *http.Request){
 
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
-	var id int
+	var id, limit int
 	strId := r.URL.Query().Get("id")
+	strLimit := r.URL.Query().Get("limit")
+
 	if strId != "" {
 		var err error
 		id, err = strconv.Atoi(strId)
@@ -116,19 +118,31 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if id != 0 {
-		getPostById(w, id)
-	} else {
-		getAllPosts(w)
+	if strLimit != "" {
+		var err error
+		limit, err = strconv.Atoi(strLimit)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
-}
-
-func getAllPosts(w http.ResponseWriter) {
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
 	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
+
+	if id != 0 && limit == 0 {
+		getPostById(w, id, dao)
+	} else if limit != 0 {
+		getPostWithLimit(w, limit, dao)
+	}else{
+		getAllPosts(w, dao)
+	}
+
+}
+
+func getAllPosts(w http.ResponseWriter, dao interfaces.PostDAO) {
 	posts, err := dao.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -144,11 +158,25 @@ func getAllPosts(w http.ResponseWriter) {
 	w.Write(js)
 }
 
-func getPostById(w http.ResponseWriter, id int) {
-	db := database.NewSqliteBase()
-	defer db.DbConnection.Close()
 
-	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
+func getPostWithLimit(w http.ResponseWriter, limit int, dao interfaces.PostDAO){
+	posts, err := dao.GetPosts(limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	js, err := json.Marshal(&posts)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+
+func getPostById(w http.ResponseWriter, id int, dao interfaces.PostDAO) {
 	post, err := dao.GetById(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

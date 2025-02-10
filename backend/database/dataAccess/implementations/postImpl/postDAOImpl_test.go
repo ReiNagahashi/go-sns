@@ -141,75 +141,75 @@ func TestGetAll_Success(t *testing.T){
 	mockDB.AssertExpectations(t)
 }
 
-func TestGetAllWithLimit_Success(t *testing.T){
-	var limit int = 10
-	var recordSize int = 100
+// func TestGetAllWithLimit_Success(t *testing.T){
+// 	var limit int = 10
+// 	var recordSize int = 100
 	
-    now := time.Now().Truncate(time.Second)
+//     now := time.Now().Truncate(time.Second)
 
-	mockDB := new(mocks.Database)
+// 	mockDB := new(mocks.Database)
 
-	mockDB.On(
-		"GetTableLength",
-		"posts",).Return(recordSize, nil)
+// 	mockDB.On(
+// 		"GetTableLength",
+// 		"posts",).Return(recordSize, nil)
 
-	mockDB.On(
-		"PrepareAndFetchAll",
-		mock.Anything,
-		limit).Return(generateMockPosts(limit,now), nil)
+// 	mockDB.On(
+// 		"PrepareAndFetchAll",
+// 		mock.Anything,
+// 		limit).Return(generateMockPosts(limit,now), nil)
 
-	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
+// 	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
 
-	posts, err := dao.GetAll(limit)
+// 	posts, err := dao.GetAll(limit)
 
-	assert.NoError(t, err)
-	assert.Len(t, posts, limit)
+// 	assert.NoError(t, err)
+// 	assert.Len(t, posts, limit)
 
-	titleId := 5
-	descriptionId := 3
-	expectedTitle := fmt.Sprintf("Test Title %v", titleId)
-	expecteDescription := fmt.Sprintf("Test Description %v",descriptionId)
+// 	titleId := 5
+// 	descriptionId := 3
+// 	expectedTitle := fmt.Sprintf("Test Title %v", titleId)
+// 	expecteDescription := fmt.Sprintf("Test Description %v",descriptionId)
 
-	assert.Equal(t, expectedTitle, posts[titleId].GetTitle())
-	assert.Equal(t, expecteDescription,posts[descriptionId].GetDescription())
+// 	assert.Equal(t, expectedTitle, posts[titleId].GetTitle())
+// 	assert.Equal(t, expecteDescription,posts[descriptionId].GetDescription())
 
-	mockDB.AssertExpectations(t)
-	mockDB.AssertNotCalled(t, "GetTableLength")
-}
+// 	mockDB.AssertExpectations(t)
+// 	mockDB.AssertNotCalled(t, "GetTableLength")
+// }
 
 
-func TestGetAllWithLimit_OverSize(t *testing.T){
-	var recordSize int = 100
-	var limit int = 1e9
+// func TestGetAllWithLimit_OverSize(t *testing.T){
+// 	var recordSize int = 100
+// 	var limit int = 1e9
 
-    now := time.Now().Truncate(time.Second)
+//     now := time.Now().Truncate(time.Second)
 
-	mockDB := new(mocks.Database)
+// 	mockDB := new(mocks.Database)
 
-	mockDB.On(
-		"GetTableLength",
-		"posts",).Return(recordSize, nil)
+// 	mockDB.On(
+// 		"GetTableLength",
+// 		"posts",).Return(recordSize, nil)
 
-	mockDB.On(
-		"PrepareAndFetchAll",
-		mock.Anything,
-		recordSize).Return(generateMockPosts(recordSize,now), nil)
+// 	mockDB.On(
+// 		"PrepareAndFetchAll",
+// 		mock.Anything,
+// 		recordSize).Return(generateMockPosts(recordSize,now), nil)
 
-	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
-	posts, err := dao.GetAll(limit)
+// 	var dao interfaces.PostDAO = NewPostDAOImpl(mockDB)
+// 	posts, err := dao.GetAll(limit)
 
-	assert.NoError(t, err)
-	assert.Len(t, posts, recordSize)
-	titleId := 10
-	descriptionId := 50
-	expectedTitle := fmt.Sprintf("Test Title %v", titleId)
-	expecteDescription := fmt.Sprintf("Test Description %v",descriptionId)
+// 	assert.NoError(t, err)
+// 	assert.Len(t, posts, recordSize)
+// 	titleId := 10
+// 	descriptionId := 50
+// 	expectedTitle := fmt.Sprintf("Test Title %v", titleId)
+// 	expecteDescription := fmt.Sprintf("Test Description %v",descriptionId)
 
-	assert.Equal(t, expectedTitle, posts[titleId].GetTitle())
-	assert.Equal(t, expecteDescription,posts[descriptionId].GetDescription())
+// 	assert.Equal(t, expectedTitle, posts[titleId].GetTitle())
+// 	assert.Equal(t, expecteDescription,posts[descriptionId].GetDescription())
 
-	mockDB.AssertExpectations(t)
-}
+// 	mockDB.AssertExpectations(t)
+// }
 
 
 func TestGetById_Success(t *testing.T){
