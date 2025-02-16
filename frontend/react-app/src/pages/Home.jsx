@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "../css/Home.css";
 import { FaHeart,FaRegHeart } from "react-icons/fa";
@@ -12,8 +12,13 @@ function Home() {
     const { loggedInUser, setLoggedInUser } = useAuth();
     const [isSessionChecked, setIsSessionChecked] = useState(false);
     const [users, setUsers] = useState({});
-    const [posts, setPosts] = useState([]);
-    const [newPost, setNewPost] = useState({ title: "", description: "" });
+    const [posts, setPosts] = useState([]); // dbから取得してきた投稿
+    const [displayedPosts, setDisplayedPosts] = useState([]); // 表示する投稿
+    const [page, setPage] = useState(1); // 現在のページ数
+    const observer = useRef(null); // intersection Observer の参照
+    const POSTS_PER_PAGE = 3; //1ページに表示する投稿数
+    const POSTS_PER_FETCH = 300;
+    const [newPost, setNewPost] = useState({ title: "", description: "" }); 
 
     useEffect(() => {
         const verifySession = async () => {
@@ -35,6 +40,51 @@ function Home() {
         }
     }, [isSessionChecked, navigate]);
 
+    useEffect(() => {
+        setDisplayedPosts(posts.slice(0, POSTS_PER_PAGE));
+        setPage(1);
+    }, [posts]);
+    
+    // 下までスクロールしたら新たに表示されるデータが追加される
+    const lastPostRef = useRef(null);
+    useEffect(() => {
+        if (!lastPostRef.current) return;
+
+        observer.current = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting){
+                loadMorePosts();
+            }
+        },
+    { threshold: 1.0 }
+    );
+
+        observer.current.observe(lastPostRef.current);
+
+        return () => observer.current.disconnect();
+    }, [displayedPosts]);
+
+    // 新しい投稿を追加する関数
+    const loadMorePosts = () => {
+        const nextPage = page + 1;
+        const newPosts = posts.slice(0, nextPage * POSTS_PER_PAGE);
+
+        if(newPosts.length !== displayedPosts.length){
+            setDisplayedPosts(newPosts);
+            setPage(nextPage);
+        }
+    };
+
+
+    const favoriteToggle = async(postId, favoriteAdd) => {
+        if(favoriteAdd){
+            await axios.post(`${API_BASE_URL}/posts/favorite/${postId}`);
+        }else{
+            await axios.delete(`${API_BASE_URL}/posts/favorite/${postId}`);
+        }
+
+        await fetchData();
+    }
+
 
     const fetchUsers = async() => {
         try {
@@ -52,18 +102,9 @@ function Home() {
         }
     }
 
-    const sortPostsByUpdatedAt = (posts) => {
-        posts.sort((a,b) => {
-            if(a.updated_at > b.updated_at) return -1;
-            else if(a.updated_at < b.updated_at) return 1;
-
-            return 0;
-        })
-    }
-
     const fetchPosts = async (updatedUsers) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/posts`);
+            const response = await axios.get(`${API_BASE_URL}/posts`, {params:{limit: POSTS_PER_FETCH}});
             const postsData = response.data;
 
             let postDataWithUserID = postsData.map(postData => ({
@@ -123,6 +164,16 @@ function Home() {
         }
     };
 
+    const sortPostsByUpdatedAt = (posts) => {
+        posts.sort((a,b) => {
+            if(a.updated_at > b.updated_at) return -1;
+            else if(a.updated_at < b.updated_at) return 1;
+
+            return 0;
+        })
+    }
+
+
     return (
         <div className="App">
             <header>
@@ -153,21 +204,34 @@ function Home() {
             <section className="post-list">
                 <h2>Posts</h2>
                 <ul>
-                {posts.map((post) => (
-                    <li key={post.id} className="post">
-                        <h3>{post.title}</h3>
-                        <span>Submitted by: </span>
-                        <a href="#" className="submitted-by">
-                            {post.submitted_by?.name || "Anonymous"}
-                        </a>
-                        <p>{post.description}</p>
-                        <span>
-                            <a href="#"><FaRegHeart /></a>
-                            <a href="#">{post.favorites.length}</a>
-                        </span>
-                        <button onClick={() => handleDelete(post.id)} className="deleteBtn">Delete</button>
-                    </li>
-                ))}
+                    {displayedPosts.map((post, index) => (
+                        <li
+                            key={post.id}
+                            className="post"
+                            ref={index === displayedPosts.length - 1 ? lastPostRef : null}
+                        >
+                            <h3>{post.title}</h3>
+                            <span>Submitted by: </span>
+                            <a href="#" className="submitted-by">
+                                {post.submitted_by?.name || "Anonymous"}
+                            </a>
+                            <p>{post.description}</p>
+                            { post.favorites.find((favoriteUser) => favoriteUser.id == loggedInUser.id) === undefined? (
+                                <span>
+                                    <button onClick={() => favoriteToggle(post.id, true)}><FaRegHeart /></button>
+                                    <a href="#">{post.favorites.length}</a>
+                                </span>
+                            ):(
+                                <span>
+                                    <button onClick={() => favoriteToggle(post.id, false)}><FaHeart /></button>
+                                    <a href="#">{post.favorites.length}</a>
+                                </span>
+                            )}
+                            <button onClick={() => handleDelete(post.id)} className="deleteBtn">
+                                Delete
+                            </button>
+                        </li>
+                    ))}
                 </ul>
             </section>
             </main>
