@@ -66,6 +66,43 @@ func addFavoritePostHandler(w http.ResponseWriter, r *http.Request){
 	}
 }
 
+
+func addFavoriteHandler(w http.ResponseWriter, r *http.Request){
+	db := database.NewSqliteBase()
+	defer db.DbConnection.Close()
+
+	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
+
+	vars := mux.Vars(r)
+	strId := vars["id"]
+	if strId == "" {
+		APIError(w, "Post id is required to add a favorite", http.StatusBadRequest)
+		return
+	}
+
+	postId, err := strconv.Atoi(strId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// ログインしているユーザーを取得
+	authUser, err := Authenticator.GetAuthenticatedUser(r)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	
+	if authUser == nil{
+		APIError(w, "User is invalid", http.StatusBadRequest)
+		return
+	}
+
+	err = dao.AddFavorite(authUser.GetId(), postId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func deleteFavoriteHandler(w http.ResponseWriter, r *http.Request){
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
@@ -404,6 +441,7 @@ func StartWebServer() error {
 	r.HandleFunc("/api/posts", createPostHandler).Methods("POST")               //フォームにタイトル・内容を入力して送信する際に実行されるエンドポイント
 	r.HandleFunc("/api/posts/favorite/{id:[0-9]+}", addFavoritePostHandler).Methods("POST") //各ポストデータに付いているハートアイコンボタンを押したら実行される
 	r.HandleFunc("/api/posts/{id:[0-9]+}", deletePostHandler).Methods("DELETE") //各ポストデータに付いている削除ボタンを押したら実行される
+	r.HandleFunc("/api/posts/favorite/{id:[0-9]+}", addFavoriteHandler).Methods("POST") //各ポストデータに付いている削除ボタンを押したら実行される
 	r.HandleFunc("/api/posts/favorite/{id:[0-9]+}", deleteFavoriteHandler).Methods("DELETE") //各ポストデータに付いている削除ボタンを押したら実行される
 
 

@@ -114,37 +114,6 @@ func (p PostDAOImpl) GetAll() ([]models.Post, error){
 	return posts, nil
 }
 
-// getAll,getPosts→updatePostFavoritesとやって消えた投稿idを持っているデータを削除するメソッドを実行→initFavorite
-// 更新方法は、全ての投稿、全てのユーザーデータをメソッド内で呼び出して、それらがfavoritesRecordsを展開した値を持っていない場合は、そのfavoriteRecordは不適切なので、削除処理をする
-func (p PostDAOImpl)initFavorite(posts []models.Post) error{
-	postIds := make(map[int]int)
-	for i := 0; i < len(posts); i++{
-		postIds[posts[i].GetId()] = i
-	}
-
-	favoritesRecords, err := p.getAllFavorites()
-	if err != nil{
-		return err
-	}
-	var userdao interfaces.UserDAO = userImpl.NewUserDAOImpl(p.db)
-	
-	for _, favoriteRecord := range favoritesRecords{
-		favoriteUserId := int(favoriteRecord["user_id"].(int64))
-		favoritePostId := int(favoriteRecord["post_id"].(int64))
-
-		user, err := userdao.GetById(favoriteUserId)
-		if err != nil{
-			return errors.New("action=PostDAOImpl.GeyById msg=Error executing query: " + err.Error())
-		}
-		postIndex := postIds[favoritePostId]
-
-		favoriteUsers := posts[postIndex].GetFavoriteUsers()
-		favoriteUsers = append(favoriteUsers, *user)
-		posts[postIndex].SetFavoriteUsers(favoriteUsers)
-	}
-
-	return nil
-}
 
 func (p PostDAOImpl) getAllFavorites()([]map[string]interface{}, error){
 	// users_postsからレコードを全て取得
@@ -183,7 +152,7 @@ func (p PostDAOImpl) GetPosts(limit int)([]models.Post, error){
 		limit = recordNums
 	}
 
-	query := "SELECT * FROM posts LIMIT ?"
+	query := "SELECT * FROM posts ORDER BY created_at DESC LIMIT ?"
 
 	postsRecords, err := p.db.PrepareAndFetchAll(query, []interface{}{limit}...)
 	if err != nil {
@@ -202,6 +171,43 @@ func (p PostDAOImpl) GetPosts(limit int)([]models.Post, error){
 	}
 
 	return posts, nil
+}
+
+
+func (p PostDAOImpl)initFavorite(posts []models.Post) error{
+	postIds := make(map[int]int)
+
+	for i := 0; i < len(posts); i++{
+		postIds[posts[i].GetId()] = i
+	}
+
+	favoritesRecords, err := p.getAllFavorites()
+	if err != nil{
+		return err
+	}
+	var userdao interfaces.UserDAO = userImpl.NewUserDAOImpl(p.db)
+	
+	for _, favoriteRecord := range favoritesRecords{
+		favoriteUserId := int(favoriteRecord["user_id"].(int64))
+		favoritePostId := int(favoriteRecord["post_id"].(int64))
+
+		user, err := userdao.GetById(favoriteUserId)
+		if err != nil{
+			return errors.New("action=PostDAOImpl.GeyById msg=Error executing query: " + err.Error())
+		}
+		
+		postIndex, exists := postIds[favoritePostId]
+		if !exists{
+			continue
+		}
+
+		favoriteUsers := posts[postIndex].GetFavoriteUsers()
+
+		favoriteUsers = append(favoriteUsers, *user)
+		posts[postIndex].SetFavoriteUsers(favoriteUsers)
+	}
+
+	return nil
 }
 
 

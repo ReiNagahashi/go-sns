@@ -1,7 +1,6 @@
 package seeds
 
 import (
-	"fmt"
 	"go-sns/database"
 	"go-sns/database/dataAccess/implementations/postImpl"
 	"go-sns/database/dataAccess/implementations/userImpl"
@@ -22,7 +21,7 @@ func PostSeed(sqlite *database.SqliteBase, wg *sync.WaitGroup) {
 	defer stmt.Close()
 
 	var userDao interfaces.UserDAO = userImpl.NewUserDAOImpl(sqlite)
-	fmt.Printf("%v", userDao)
+
 
 	users, err := userDao.GetAll()
 	if err != nil {
