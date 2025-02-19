@@ -8,6 +8,7 @@ import (
 	"go-sns/database/dataAccess/implementations/postImpl"
 	"go-sns/database/dataAccess/implementations/userImpl"
 	"go-sns/database/dataAccess/interfaces"
+	"go-sns/middleware"
 	"go-sns/models"
 	"go-sns/utils"
 	"go-sns/utils/Authenticator"
@@ -35,7 +36,7 @@ func APIError(w http.ResponseWriter, errMessage string, code int) {
 	w.Write(jsonError)
 }
 
-func addFavoritePostHandler(w http.ResponseWriter, r *http.Request){
+func addFavoritePostHandler(w http.ResponseWriter, r *http.Request) {
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
@@ -56,7 +57,7 @@ func addFavoritePostHandler(w http.ResponseWriter, r *http.Request){
 
 	// ログインしているユーザーを取得
 	authUser, err := Authenticator.GetAuthenticatedUser(r)
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -66,8 +67,7 @@ func addFavoritePostHandler(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-
-func addFavoriteHandler(w http.ResponseWriter, r *http.Request){
+func addFavoriteHandler(w http.ResponseWriter, r *http.Request) {
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
@@ -88,11 +88,11 @@ func addFavoriteHandler(w http.ResponseWriter, r *http.Request){
 
 	// ログインしているユーザーを取得
 	authUser, err := Authenticator.GetAuthenticatedUser(r)
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	
-	if authUser == nil{
+
+	if authUser == nil {
 		APIError(w, "User is invalid", http.StatusBadRequest)
 		return
 	}
@@ -103,7 +103,7 @@ func addFavoriteHandler(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func deleteFavoriteHandler(w http.ResponseWriter, r *http.Request){
+func deleteFavoriteHandler(w http.ResponseWriter, r *http.Request) {
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
@@ -124,11 +124,11 @@ func deleteFavoriteHandler(w http.ResponseWriter, r *http.Request){
 
 	// ログインしているユーザーを取得
 	authUser, err := Authenticator.GetAuthenticatedUser(r)
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	
-	if authUser == nil{
+
+	if authUser == nil {
 		APIError(w, "User is invalid", http.StatusBadRequest)
 		return
 	}
@@ -139,7 +139,6 @@ func deleteFavoriteHandler(w http.ResponseWriter, r *http.Request){
 	}
 
 }
-
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	var id, limit int
@@ -173,7 +172,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		getPostById(w, id, dao)
 	} else if limit != 0 {
 		getPostWithLimit(w, limit, dao)
-	}else{
+	} else {
 		getAllPosts(w, dao)
 	}
 
@@ -195,8 +194,7 @@ func getAllPosts(w http.ResponseWriter, dao interfaces.PostDAO) {
 	w.Write(js)
 }
 
-
-func getPostWithLimit(w http.ResponseWriter, limit int, dao interfaces.PostDAO){
+func getPostWithLimit(w http.ResponseWriter, limit int, dao interfaces.PostDAO) {
 	posts, err := dao.GetPosts(limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -211,7 +209,6 @@ func getPostWithLimit(w http.ResponseWriter, limit int, dao interfaces.PostDAO){
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
-
 
 func getPostById(w http.ResponseWriter, id int, dao interfaces.PostDAO) {
 	post, err := dao.GetById(id)
@@ -237,7 +234,7 @@ func createPostHandler(w http.ResponseWriter, r *http.Request) {
 	var dao interfaces.PostDAO = postImpl.NewPostDAOImpl(db)
 	timeStamp := time.Now()
 	authUser, err := Authenticator.GetAuthenticatedUser(r)
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -280,9 +277,7 @@ func deletePostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-
-func userHandler(w http.ResponseWriter, r *http.Request){
+func userHandler(w http.ResponseWriter, r *http.Request) {
 	var id int
 	strId := r.URL.Query().Get("id")
 	if strId != "" {
@@ -301,7 +296,7 @@ func userHandler(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func getUsers(w http.ResponseWriter){
+func getUsers(w http.ResponseWriter) {
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
@@ -321,8 +316,7 @@ func getUsers(w http.ResponseWriter){
 	w.Write(js)
 }
 
-
-func getUserById(w http.ResponseWriter, id int){
+func getUserById(w http.ResponseWriter, id int) {
 	db := database.NewSqliteBase()
 	defer db.DbConnection.Close()
 
@@ -341,7 +335,6 @@ func getUserById(w http.ResponseWriter, id int){
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
-
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	db := database.NewSqliteBase()
@@ -432,19 +425,17 @@ func StartWebServer() error {
 	}).Handler(r)
 
 	// Health check
-	r.HandleFunc("/health", func (w http.ResponseWriter, r *http.Request){
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
 	// Post
-	r.HandleFunc("/api/posts", postHandler).Methods("GET")                      //全てのポストデータをデータベースから持ってきて表示する。クエリパラメータとしてidが渡されていれば、そのidのデータのみを表示する
-	r.HandleFunc("/api/posts", createPostHandler).Methods("POST")               //フォームにタイトル・内容を入力して送信する際に実行されるエンドポイント
-	r.HandleFunc("/api/posts/favorite/{id:[0-9]+}", addFavoritePostHandler).Methods("POST") //各ポストデータに付いているハートアイコンボタンを押したら実行される
-	r.HandleFunc("/api/posts/{id:[0-9]+}", deletePostHandler).Methods("DELETE") //各ポストデータに付いている削除ボタンを押したら実行される
-	r.HandleFunc("/api/posts/favorite/{id:[0-9]+}", addFavoriteHandler).Methods("POST") //各ポストデータに付いている削除ボタンを押したら実行される
+	r.HandleFunc("/api/posts", postHandler).Methods("GET")                                   //全てのポストデータをデータベースから持ってきて表示する。クエリパラメータとしてidが渡されていれば、そのidのデータのみを表示する
+	r.HandleFunc("/api/posts", createPostHandler).Methods("POST")                            //フォームにタイトル・内容を入力して送信する際に実行されるエンドポイント
+	r.HandleFunc("/api/posts/favorite/{id:[0-9]+}", addFavoritePostHandler).Methods("POST")  //各ポストデータに付いているハートアイコンボタンを押したら実行される
+	r.HandleFunc("/api/posts/{id:[0-9]+}", deletePostHandler).Methods("DELETE")              //各ポストデータに付いている削除ボタンを押したら実行される
+	r.HandleFunc("/api/posts/favorite/{id:[0-9]+}", addFavoriteHandler).Methods("POST")      //各ポストデータに付いている削除ボタンを押したら実行される
 	r.HandleFunc("/api/posts/favorite/{id:[0-9]+}", deleteFavoriteHandler).Methods("DELETE") //各ポストデータに付いている削除ボタンを押したら実行される
-
-
 
 	// User
 	r.HandleFunc("/api/users", userHandler).Methods("GET")
@@ -454,5 +445,7 @@ func StartWebServer() error {
 	r.HandleFunc("/api/auth/loggedInUser", getLoggedinUserHandler).Methods("GET")
 	r.HandleFunc("/api/auth/logout", logoutHandler).Methods("POST")
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), corsHandler)
+	wrappedMux := middleware.NewCsrfMiddleware(corsHandler)
+
+	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), wrappedMux)
 }

@@ -52,7 +52,6 @@ func LoginAsUser(user *models.User, w http.ResponseWriter, r *http.Request) erro
 	}
 
 	session.Values["userID"] = user.GetId()
-	session.Values["test"] = "Helloworld"
 
 	if saveErr := session.Save(r, w); saveErr != nil {
 		log.Fatalln(saveErr.Error())

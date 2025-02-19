@@ -89,6 +89,7 @@ func (u UserDAOImpl) getRawById(id int) map[string]interface{} {
 	return result[0]
 }
 
+
 func (u UserDAOImpl) GetByEmail(email string) (*models.User, error) {
 	result, err := u.db.PrepareAndFetchAll("SELECT * FROM users WHERE email = ?", email)
 	if err != nil {

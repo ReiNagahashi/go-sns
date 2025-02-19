@@ -6,9 +6,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type PasswordHelper interface{
-	
-}
 
 func HashPassword(password string)(string, error){
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
