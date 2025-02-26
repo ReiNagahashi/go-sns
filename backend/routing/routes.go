@@ -416,17 +416,12 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func getCsrfTokenHandler(w http.ResponseWriter, r *http.Request){
-	session, err := config.Store.Get(r, "csrf_token")
+	csrfToken, err := utils.GetCsrfToken(w, r)
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 
-	if session.Values["token"] == nil{
-		http.Error(w, "csrf_token is not generated!", http.StatusInternalServerError)
-	}
-
-	js, err := json.Marshal(session.Values["token"])
+	js, err := json.Marshal(csrfToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
