@@ -10,21 +10,23 @@ export const fetchLoggedinUser = async () => {
         
         return user;
     }catch(error){
-        console.error("Error chekcing session: ", error);
+        console.error("Error checking session: ", error);
 
         return null;
     }
 }
 
-export const logoutUser = async() => {
+export const logoutUser = async(csrfToken) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/logout`, {
-            method: "POST",
-            credentials: "include",
-        });
-        if(!response.ok){
-            throw new Error("Failed to logout");
-        }
+        await axios.post(`${API_BASE_URL}/auth/logout`, {},
+            {
+                withCredentials: true,
+                headers: {
+                    'X-CSRF-Token': csrfToken
+                }
+            }
+        );
+
     }catch(error){
         console.error("Error logging out: ", error);
         throw error;

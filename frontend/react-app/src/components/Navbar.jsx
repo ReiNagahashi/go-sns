@@ -2,10 +2,13 @@ import React, { useEffect } from "react";
 import {Link, useNavigate } from "react-router-dom";
 import { fetchLoggedinUser, logoutUser } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import { useCsrf } from "../context/CsrfContext";
 
 const Navbar = () => {
     const { loggedInUser, setLoggedInUser } = useAuth();
     const navigate = useNavigate();
+    const {csrfToken} = useCsrf();
+    
 
     useEffect(() => {
         const verifySession = async () => {
@@ -17,7 +20,7 @@ const Navbar = () => {
 
     const handleLogout = async() => {
         try{
-            await logoutUser();
+            await logoutUser(csrfToken);
             setLoggedInUser(null);
             navigate("/login");
         }catch(error){

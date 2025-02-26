@@ -4,6 +4,7 @@ import "../css/Home.css";
 import { FaHeart,FaRegHeart } from "react-icons/fa";
 import API_BASE_URL from "../config";
 import { useAuth } from "../context/AuthContext";
+import { useCsrf } from "../context/CsrfContext"
 import { useNavigate } from "react-router-dom";
 import { fetchLoggedinUser } from "../utils/api";
 
@@ -19,6 +20,7 @@ function Home() {
     const POSTS_PER_PAGE = 3; //1ページに表示する投稿数
     const POSTS_PER_FETCH = 300;
     const [newPost, setNewPost] = useState({ title: "", description: "" }); 
+    const {csrfToken} = useCsrf();
 
     useEffect(() => {
         const verifySession = async () => {
@@ -59,7 +61,6 @@ function Home() {
     );
 
         observer.current.observe(lastPostRef.current);
-
         return () => observer.current.disconnect();
     }, [displayedPosts]);
 
@@ -147,7 +148,14 @@ function Home() {
             formData.append("title", newPost.title)
             formData.append("description", newPost.description)
 
-            await axios.post(`${API_BASE_URL}/posts`, formData);
+            await axios.post(`${API_BASE_URL}/posts`, formData, 
+                {
+                    withCredentials: true,
+                    headers: {
+                        'X-CSRF-Token': csrfToken
+                    }
+                }
+            );
             setNewPost({ title: "", description: "" });
             fetchData();
         } catch (error) {
@@ -157,7 +165,14 @@ function Home() {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`${API_BASE_URL}/posts/${id}`);
+            await axios.delete(`${API_BASE_URL}/posts/${id}`, 
+                {
+                    withCredentials: true,
+                    headers: {
+                        'X-CSRF-Token': csrfToken
+                    }
+                }
+            );
             fetchData();
         } catch (error) {
             console.error("Error deleting post:", error);
@@ -182,23 +197,23 @@ function Home() {
             <main>
             <section className="post-form">
                 <form onSubmit={handleSubmit}>
-                <h2>Create a New Post</h2>
-                <input
-                    type="text"
-                    name="title"
-                    placeholder="Title"
-                    value={newPost.title}
-                    onChange={handleInputChange}
-                    required
-                />
-                <textarea
-                    name="description"
-                    placeholder="Description"
-                    value={newPost.description}
-                    onChange={handleInputChange}
-                    required
-                ></textarea>
-                <button type="submit">Post</button>
+                    <h2>Create a New Post</h2>
+                    <input
+                        type="text"
+                        name="title"
+                        placeholder="Title"
+                        value={newPost.title}
+                        onChange={handleInputChange}
+                        required
+                    />
+                    <textarea
+                        name="description"
+                        placeholder="Description"
+                        value={newPost.description}
+                        onChange={handleInputChange}
+                        required
+                    ></textarea>
+                    <button type="submit">Post</button>
                 </form>
             </section>
             <section className="post-list">

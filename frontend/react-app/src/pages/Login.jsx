@@ -4,6 +4,7 @@ import "../css/LoginRegister.css";
 import API_BASE_URL from '../config';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCsrf} from '../context/CsrfContext';
 import { fetchLoggedinUser } from '../utils/api';
 
 function Login() {
@@ -11,9 +12,8 @@ function Login() {
         email: '',
         password: '',
     });
-
+    const {csrfToken} = useCsrf();
     const {setLoggedInUser} = useAuth();
-
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -28,10 +28,17 @@ function Login() {
         e.preventDefault();
         try {
             let formData = new FormData();
-            formData.append("email", formValue.email)
-            formData.append("password", formValue.password)
 
-            await axios.post(`${API_BASE_URL}/auth/login`, formData, { withCredentials: true });
+            formData.append("email", formValue.email);
+            formData.append("password", formValue.password);
+
+            await axios.post(`${API_BASE_URL}/auth/login`, formData, {
+                withCredentials: true,
+                headers: {
+                    'X-CSRF-Token': csrfToken, // Include the CSRF token in the headers
+                },
+            });
+            
             const user = await fetchLoggedinUser();
             setLoggedInUser(user);
             navigate("/");
