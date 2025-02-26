@@ -41,6 +41,7 @@ func AuthenTicate(email, password string, w http.ResponseWriter, r *http.Request
 
 }
 
+
 func LoginAsUser(user *models.User, w http.ResponseWriter, r *http.Request) error {
 	if user.GetId() == -1 {
 		return errors.New("cannnot login a user with no ID")
@@ -49,6 +50,10 @@ func LoginAsUser(user *models.User, w http.ResponseWriter, r *http.Request) erro
 	session, err := config.Store.Get(r, sessionName)
 	if err != nil {
 		return err
+	}
+
+	if session.Values["userID"] != nil{
+		return errors.New("user is already logged in. Logout before continuing")
 	}
 
 	session.Values["userID"] = user.GetId()

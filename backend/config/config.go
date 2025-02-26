@@ -44,8 +44,8 @@ func init(){
 
 	Store.Options = &sessions.Options{
 		Path:     "/",
-		MaxAge:   3600,
-		HttpOnly: true,  // クッキーをJavaScriptからアクセス不能にする
+		MaxAge:   86400,
+		HttpOnly: false,  // クッキーをJavaScriptからアクセス不能にする
 		Secure:   false, // HTTPSのみでセッションクッキーを送信する
 	}
 }

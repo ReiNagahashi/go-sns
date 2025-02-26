@@ -414,20 +414,46 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
+func getCsrfTokenHandler(w http.ResponseWriter, r *http.Request){
+	session, err := config.Store.Get(r, "csrf_token")
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if session.Values["token"] == nil{
+		http.Error(w, "csrf_token is not generated!", http.StatusInternalServerError)
+	}
+
+	js, err := json.Marshal(session.Values["token"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
 func StartWebServer() error {
 	r := mux.NewRouter()
-
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
-		AllowedMethods:   []string{"GET", "POST", "DELETE"},
-		AllowedHeaders:   []string{"Content-Type"},
+		AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
-	}).Handler(r)
+		}).Handler(r)
+		
+
+	middleware := middleware.NewCsrfMiddleware(corsHandler)
 
 	// Health check
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+
+
 
 	// Post
 	r.HandleFunc("/api/posts", postHandler).Methods("GET")                                   //全てのポストデータをデータベースから持ってきて表示する。クエリパラメータとしてidが渡されていれば、そのidのデータのみを表示する
@@ -445,7 +471,8 @@ func StartWebServer() error {
 	r.HandleFunc("/api/auth/loggedInUser", getLoggedinUserHandler).Methods("GET")
 	r.HandleFunc("/api/auth/logout", logoutHandler).Methods("POST")
 
-	wrappedMux := middleware.NewCsrfMiddleware(corsHandler)
+	r.HandleFunc("/api/get-csrf-token", getCsrfTokenHandler).Methods("GET")
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), wrappedMux)
+
+	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), middleware)
 }
